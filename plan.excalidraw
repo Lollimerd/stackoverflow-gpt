@@ -5,8 +5,8 @@
   "elements": [
     {
       "type": "line",
-      "version": 859,
-      "versionNonce": 405317541,
+      "version": 893,
+      "versionNonce": 1676183567,
       "isDeleted": false,
       "id": "WyaLROmau_-8BTnrKsbR_",
       "fillStyle": "hachure",
@@ -49,14 +49,14 @@
         "type": 2
       },
       "boundElements": [],
-      "updated": 1754720448138,
+      "updated": 1757921535948,
       "link": null,
       "locked": false
     },
     {
       "type": "ellipse",
-      "version": 797,
-      "versionNonce": 1506988331,
+      "version": 831,
+      "versionNonce": 315556961,
       "isDeleted": false,
       "id": "r1jDp_siWVcp0u4qlzjBu",
       "fillStyle": "hachure",
@@ -84,14 +84,14 @@
         "type": 2
       },
       "boundElements": [],
-      "updated": 1754720448138,
+      "updated": 1757921535948,
       "link": null,
       "locked": false
     },
     {
       "type": "ellipse",
-      "version": 868,
-      "versionNonce": 2120116997,
+      "version": 902,
+      "versionNonce": 148549167,
       "isDeleted": false,
       "id": "O6cN5BRx9ZUMGMuDThOiN",
       "fillStyle": "hachure",
@@ -119,14 +119,14 @@
         "type": 2
       },
       "boundElements": [],
-      "updated": 1754720448138,
+      "updated": 1757921535948,
       "link": null,
       "locked": false
     },
     {
       "type": "ellipse",
-      "version": 915,
-      "versionNonce": 1834316747,
+      "version": 949,
+      "versionNonce": 168939585,
       "isDeleted": false,
       "id": "SDy8RlWpHLCAqJFVCz4Nl",
       "fillStyle": "hachure",
@@ -154,14 +154,14 @@
         "type": 2
       },
       "boundElements": [],
-      "updated": 1754720448138,
+      "updated": 1757921535948,
       "link": null,
       "locked": false
     },
     {
       "type": "line",
-      "version": 1875,
-      "versionNonce": 1405403749,
+      "version": 1909,
+      "versionNonce": 887296079,
       "isDeleted": false,
       "id": "h3771_22cWHqLJZYruZ7_",
       "fillStyle": "hachure",
@@ -288,14 +288,14 @@
         "type": 2
       },
       "boundElements": [],
-      "updated": 1754720448138,
+      "updated": 1757921535948,
       "link": null,
       "locked": false
     },
     {
       "type": "line",
-      "version": 850,
-      "versionNonce": 1235927659,
+      "version": 884,
+      "versionNonce": 1255153697,
       "isDeleted": false,
       "id": "RrS--AurvMiRKWn_DZ8kM",
       "fillStyle": "hachure",
@@ -374,7 +374,7 @@
         "type": 2
       },
       "boundElements": [],
-      "updated": 1754720448138,
+      "updated": 1757921535948,
       "link": null,
       "locked": false
     },
@@ -400,11 +400,11 @@
       "index": "a6",
       "roundness": null,
       "seed": 1790989167,
-      "version": 877,
-      "versionNonce": 2056873445,
+      "version": 911,
+      "versionNonce": 567946863,
       "isDeleted": false,
       "boundElements": [],
-      "updated": 1754731937802,
+      "updated": 1757921535948,
       "link": null,
       "locked": false,
       "text": "Langchain_Neo4j:\nNeo4jVector: vector store creation\nGraphCypherQAChain: dynamic graphRAG\nNeo4jGraph: graph enhanced retrieval query\n\nLangchain_ollama\nChatOllama: llm hosting\nOllamaEmbeddings: embed for cosine similarity (vector search)\n\nLangchain_retrievers\nEnsembleRetriever, vectorstore.asretriever(query, k=top_k)\n\nClass: State\nTypedDict\nDocument [List]\ncontext: str",
