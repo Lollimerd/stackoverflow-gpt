@@ -1,5 +1,5 @@
 responses/
-pycache/
+__pycache__/
 *.log
 *.tmp
 *.pyc
