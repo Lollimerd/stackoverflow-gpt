@@ -164,7 +164,7 @@ def render_message_with_mermaid(content):
 active_chat = get_active_chat()
 # f"{active_chat['title']}" # chat no
 # --- UI Elements ---
-st.title(f"🧠 ARISTOTLE AI ")
+st.title(f"🧠 Lollimerd's AI ")
 st.header("""**:violet-badge[:material/star: OSU GPT]** **:blue-badge[:material/star: Ollama]** **:green-badge[:material/Verified: Mixture of Experts (MOE) model -> Qwen3]** **:blue-badge[:material/component_exchange: GraphRAG]**
 """)
 st.markdown("""Ask a question to get a real-time analysis from the knowledge graph. Feel free to ask it whatever your queries may be. You can ask anything about the context within pressum compile for now.  
