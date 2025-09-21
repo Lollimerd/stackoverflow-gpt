@@ -5,7 +5,7 @@ from langchain_neo4j import Neo4jGraph, Neo4jVector, GraphCypherQAChain
 import streamlit as st
 from streamlit.logger import get_logger
 from langchain_community.embeddings import OllamaEmbeddings
-from utils import create_constraints, create_vector_index
+from utils.utils import create_constraints, create_vector_index
 from PIL import Image
 
 load_dotenv()
@@ -14,7 +14,6 @@ url = os.getenv("NEO4J_URL")
 username = os.getenv("NEO4J_USER")
 password = os.getenv("NEO4J_PASS")
 ollama_base_url = os.getenv("OLLAMA_BASE_URL")
-# embedding_model_name = os.getenv("EMBEDDING_MODEL")
 
 logger = get_logger(__name__)
 

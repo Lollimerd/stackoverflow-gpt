@@ -9,7 +9,8 @@ from langchain_core.documents import Document
 from pydantic import BaseModel
 from urllib.parse import urlparse
 from prompts import analyst_prompt
-from init import (
+from utils.util import format_docs_with_metadata, find_container_by_port
+from setup.init import (
     tagstore,
     answerstore,
     questionstore,
@@ -32,7 +33,7 @@ def retrieve_context(question: str) -> List[Document]:
                     'params': {'embedding': EMBEDDINGS.embed_query(question)},
                     'fetch_k': 100,
                     'score_threshold': 0.70,
-                    'lambda_mult': 0.4,
+                    'lambda_mult': 0.5,
                     })
 
     user_retriever = userstore.as_retriever(
@@ -41,7 +42,7 @@ def retrieve_context(question: str) -> List[Document]:
                 'params': {'embedding': EMBEDDINGS.embed_query(question)},
                 'fetch_k': 100,
                 'score_threshold': 0.70,
-                'lambda_mult': 0.4,
+                'lambda_mult': 0.5,
                 })
 
     question_retriever = questionstore.as_retriever(
@@ -50,7 +51,7 @@ def retrieve_context(question: str) -> List[Document]:
                     'params': {'embedding': EMBEDDINGS.embed_query(question)},
                     'fetch_k': 100,
                     'score_threshold': 0.70,
-                    'lambda_mult': 0.4,
+                    'lambda_mult': 0.5,
                     })
 
     answer_retriever = answerstore.as_retriever(
@@ -59,7 +60,7 @@ def retrieve_context(question: str) -> List[Document]:
                     'params': {'embedding': EMBEDDINGS.embed_query(question)},
                     'fetch_k': 100,
                     'score_threshold': 0.70,
-                    'lambda_mult': 0.4,
+                    'lambda_mult': 0.5,
                     })
 
     ensemble_retriever = EnsembleRetriever(
@@ -86,31 +87,6 @@ class QueryRequest(BaseModel):
 def index():
     return {"message": "Welcome to the GraphRAG API"}
 
-# --- Dynamic Container Discovery ---
-def find_container_by_port(port: int) -> str:
-    """Inspects running Docker containers to find which one is using the specified port."""
-    if not port:
-        return "Invalid port"
-    try:
-        # Connect to the Docker daemon
-        client = docker.from_env()
-        containers = client.containers.list()
-
-        for container in containers:
-            # The .ports attribute is a dictionary like: {'7687/tcp': [{'HostIp': '0.0.0.0', 'HostPort': '7687'}]}
-            port_mappings = container.ports
-            for container_port, host_mappings in port_mappings.items():
-                if host_mappings:
-                    for mapping in host_mappings:
-                        if mapping.get("HostPort") == str(port):
-                            return container.name # Found it!
-
-        return "No matching container found"
-    except docker.errors.DockerException:
-        return "Docker daemon not running or not accessible"
-    except Exception as e:
-        return f"An error occurred: {e}"
-
 # --- Add config endpoint ---
 @app.get("/api/v1/config")
 def get_configuration():
@@ -124,29 +100,6 @@ def get_configuration():
         "container_name": container_name,
         "neo4j_user": NEO4J_USERNAME,
     }
-
-def format_docs_with_metadata(docs: List[Document]) -> str:
-    """
-    Formats a list of Documents into a single string, where each
-    document's page_content is followed by its corresponding metadata.
-    """
-    # Create a list of formatted strings, one for each document
-    formatted_blocks = []
-    for doc in docs:
-        # Format the metadata as a pretty JSON string
-        metadata_str = json.dumps(doc.metadata, indent=2)
-
-        # Create a combined block for the document's content and its metadata
-        block = (
-            f"--------- CONTENT ---------\n"
-            f"{doc.page_content}\n"
-            f"--------- METADATA ---------\n"
-            f"{metadata_str}"
-        )
-        formatted_blocks.append(block)
-
-    # Join all the individual document blocks with a clear separator
-    return "\n\n"+"="*50+"\n\n".join(formatted_blocks)
 
 # and the provided context inside <think></think> tags
 @app.post("/stream-ask")
