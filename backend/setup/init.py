@@ -8,6 +8,7 @@ from langchain_neo4j import Neo4jGraph, GraphCypherQAChain, Neo4jVector
 from langchain.chains.summarize import load_summarize_chain
 from langgraph.graph import START, StateGraph
 from typing_extensions import List, TypedDict
+from typing import Dict, Optional
 from langchain_core.documents import Document
 
 # ===========================================================================================================================================================
@@ -21,34 +22,38 @@ NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL")
 
 # qwen3:8b works for now with limited context of 40k, qwen3:30b works with 256k max
-ANSWER_LLM = ChatOllama(model="qwen3:1.7b", # Ensure your model produces <think> tags
-                        base_url=OLLAMA_BASE_URL, 
-                        num_ctx=40968, # 32k
-                        num_predict=-2, # fill context
-                        tfs_z=2.0, # reduce impact of less probable tokens from output
-                        repeat_penalty=1.5, # higher, penalise repetitions
-                        repeat_last_n=-1, # look back within context to penalise penalty
-                        top_p=0.95, # more diverse text
-                        top_k=100, # give more diverse answers
-                        mirostat=2.0, # enable mirostat 2.0 sampling for controlling perplexity
-                        mirostat_tau=8.0, # output diversity
-                        mirostat_eta=0.05, # learning rate, responsiveness
-                    ) 
+ANSWER_LLM = ChatOllama(
+    model="qwen3:1.7b", # Ensure your model produces <think> tags
+    base_url=OLLAMA_BASE_URL, 
+    num_ctx=40968, # 32k
+    num_predict=-2, # fill context
+    tfs_z=2.0, # reduce impact of less probable tokens from output
+    repeat_penalty=1.5, # higher, penalise repetitions
+    repeat_last_n=-1, # look back within context to penalise penalty
+    top_p=0.95, # more diverse text
+    top_k=100, # give more diverse answers
+    mirostat=2.0, # enable mirostat 2.0 sampling for controlling perplexity
+    mirostat_tau=8.0, # output diversity
+    mirostat_eta=0.05, # learning rate, responsiveness
+) 
 
-EMBEDDINGS = OllamaEmbeddings(model="bge-m3", 
-                            base_url=OLLAMA_BASE_URL, 
-                            show_progress=True, 
-                            tfs_z=2.0, # reduce impact of less probable tokens from output
-                            mirostat=2.0, # enable mirostat 2.0 sampling for controlling perplexity
-                            mirostat_tau=1.0, # output diversity consistent
-                            mirostat_eta=0.2 # faster learning rate 
-                        )
+EMBEDDINGS = OllamaEmbeddings(
+    model="bge-m3", 
+    base_url=OLLAMA_BASE_URL, 
+    show_progress=True, 
+    tfs_z=2.0, # reduce impact of less probable tokens from output
+    mirostat=2.0, # enable mirostat 2.0 sampling for controlling perplexity
+    mirostat_tau=1.0, # output diversity consistent
+    mirostat_eta=0.2 # faster learning rate 
+)
 
-graph = Neo4jGraph(url=NEO4J_URL, 
-                   username=NEO4J_USERNAME, 
-                   password=NEO4J_PASSWORD, 
-                   enhanced_schema=True, 
-                   refresh_schema=True)
+graph = Neo4jGraph(
+    url=NEO4J_URL,
+    username=NEO4J_USERNAME,
+    password=NEO4J_PASSWORD,
+    enhanced_schema=True,
+    refresh_schema=True
+)
 # print(f"schema: {graph.schema}")
 
 # define state for application
@@ -60,66 +65,6 @@ class State(TypedDict):
 # test embedding generation
 # sample_embedding = EMBEDDINGS.embed_query("Hello world")
 # print(f"\nSample embedding dimension: {len(sample_embedding)}")
-
-# ===========================================================================================================================================================
-# Step 2: Creation of vector index, vectorstores and fulltext for hybrid vector search
-# ===========================================================================================================================================================
-
-node_labels = ["User", "Tag", "Question", ""]
-
-# creating vector index for vectorstores
-tagstore = Neo4jVector.from_existing_graph(
-        graph=graph,
-        node_label="Tag",
-        embedding=EMBEDDINGS,
-        embedding_node_property="embeddings",
-        index_name="Tag_index",
-        keyword_index_name="Tag_keyword_index",
-        search_type="hybrid",
-        text_node_properties=["name"],
-    
-    )
-print(f"Created vectorstore for {tagstore.index_name} index")
-
-userstore = Neo4jVector.from_existing_graph(
-        graph=graph,
-        node_label="User",
-        embedding=EMBEDDINGS,
-        embedding_node_property="embeddings",
-        index_name="User_index",
-        keyword_index_name="User_keyword_index",
-        search_type="hybrid",
-        text_node_properties=["reputation", "display_name"],
-        
-    )
-print(f"Created vectorstore for {userstore.index_name} index")
-
-questionstore = Neo4jVector.from_existing_graph(
-        graph=graph,
-        node_label="Question",
-        embedding=EMBEDDINGS,
-        embedding_node_property="embeddings",
-        index_name="Question_index",
-        keyword_index_name="Question_keyword_index",
-        search_type="hybrid",
-        text_node_properties=["score", "link", "favourite_count", "id", "creation_date", "body", "title"],
-
-    )
-print(f"Created vectorstore for {questionstore.index_name} index")
-
-
-answerstore = Neo4jVector.from_existing_graph(
-        graph=graph,
-        node_label="Answer",
-        embedding=EMBEDDINGS,
-        embedding_node_property="embeddings",
-        index_name="Answer_index",
-        keyword_index_name="Answer_keyword_index",
-        search_type="hybrid",
-        text_node_properties=["score", "is_accepted", "id", "body", "creation_date"],
-      
-    )
-print(f"Created vectorstore for {answerstore.index_name} index")
 
 # ===========================================================================================================================================================
 # Crafting custom cypher retrieval queries
@@ -183,60 +128,68 @@ ORDER BY score DESC
 """
 
 # ===========================================================================================================================================================
-# Setting up VECTORSTORES from existing vector index & retrieval queries
+# Creation of vector index, vectorstores and fulltext for hybrid vector search
 # ===========================================================================================================================================================
 
-# acting vector DBs
-# creating vector index for vectorstores
-tagstore = Neo4jVector.from_existing_graph(
-        graph=graph,
-        node_label="Tag",
-        embedding=EMBEDDINGS,
-        embedding_node_property="embeddings",
-        index_name="Tag_index",
-        keyword_index_name="Tag_keyword_index",
-        search_type="hybrid",
-        text_node_properties=["name"],
-        retrieval_query=retrieval_query,
-    )
-print(f"Created vectorstore for {tagstore.index_name} index")
+def create_vector_stores(graph, EMBEDDINGS, retrieval_query) -> Dict[str, Neo4jVector]:
+    """
+    Creates Neo4jVector stores from an existing graph using a data-driven approach.
 
-userstore = Neo4jVector.from_existing_graph(
-        graph=graph,
-        node_label="User",
-        embedding=EMBEDDINGS,
-        embedding_node_property="embeddings",
-        index_name="User_index",
-        keyword_index_name="User_keyword_index",
-        search_type="hybrid",
-        text_node_properties=["reputation", "display_name"],
-        retrieval_query=retrieval_query,
+    Args:
+        graph: The Neo4j graph instance.
+        EMBEDDINGS: The embedding model.
+        retrieval_query: The Cypher query for retrieval.
+
+    Returns:
+        A dictionary of Neo4jVector store instances, keyed by their node label.
+    """
+    
+    # Define a list of configurations for each vector store
+    store_configs = [
+        {
+            "node_label": "Tag",
+            "text_node_properties": ["name"],
+        },
+        {
+            "node_label": "User",
+            "text_node_properties": ["reputation", "display_name"],
+        },
+        {
+            "node_label": "Question",
+            "text_node_properties": ["score", "link", "favourite_count", "id", "creation_date", "body", "title"],
+        },
+        {
+            "node_label": "Answer",
+            "text_node_properties": ["score", "is_accepted", "id", "body", "creation_date"],
+        },
+    ]
+
+    vectorstores = {}
+    
+    # Loop through the configurations and create the vector stores
+    for config in store_configs:
+        label = config["node_label"]
+        index_name = f"{label}_index"
+        keyword_index_name = f"{label}_keyword_index"
         
-    )
-print(f"Created vectorstore for {userstore.index_name} index")
+        vectorstores[label.lower() + "store"] = Neo4jVector.from_existing_graph(
+            graph=graph,
+            node_label=label,
+            embedding=EMBEDDINGS,
+            embedding_node_property="embedding",
+            index_name=index_name,
+            keyword_index_name=keyword_index_name,
+            search_type="hybrid",
+            text_node_properties=config["text_node_properties"],
+            retrieval_query=retrieval_query,
+        )
+        print(f"Created vectorstore for {index_name} index")
+        
+    return vectorstores
 
-questionstore = Neo4jVector.from_existing_graph(
-        graph=graph,
-        node_label="Question",
-        embedding=EMBEDDINGS,
-        embedding_node_property="embeddings",
-        index_name="Question_index",
-        keyword_index_name="Question_keyword_index",
-        search_type="hybrid",
-        text_node_properties=["score", "link", "favourite_count", "id", "creation_date", "body", "title"],
-        retrieval_query=retrieval_query,
-    )
-print(f"Created vectorstore for {questionstore.index_name} index")
-
-answerstore = Neo4jVector.from_existing_graph(
-        graph=graph,
-        node_label="Answer",
-        embedding=EMBEDDINGS,
-        embedding_node_property="embeddings",
-        index_name="Answer_index",
-        keyword_index_name="Answer_keyword_index",
-        search_type="hybrid",
-        text_node_properties=["score", "is_accepted", "id", "body", "creation_date"],
-        retrieval_query=retrieval_query,
-    )
-print(f"Created vectorstore for {answerstore.index_name} index")
+# Create vector stores
+stores = create_vector_stores(graph, EMBEDDINGS, retrieval_query)
+tagstore = stores['tagstore']
+userstore = stores['userstore']
+questionstore = stores['questionstore']
+answerstore = stores['answerstore']
