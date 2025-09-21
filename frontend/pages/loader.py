@@ -1,5 +1,4 @@
-import os
-import requests
+import os, time, requests
 from dotenv import load_dotenv
 from langchain_neo4j import Neo4jGraph, Neo4jVector, GraphCypherQAChain
 import streamlit as st
@@ -126,8 +125,9 @@ def render_page():
     if st.button("Import", type="primary"):
         with st.spinner("Loading... This might take a minute or two."):
             try:
-                for page in range(1, num_pages + 1):
+                for page in range(1, num_pages + 1): # add rate limit here
                     load_so_data(user_input, start_page + (page - 1))
+                    time.sleep(0.1)  # to avoid hitting rate limits
                 st.success("Import successful", icon="✅")
                 st.caption("Data model")
                 # st.image(datamodel_image)
