@@ -1,7 +1,7 @@
 # main.py
 import asyncio, os, json, uvicorn, docker
 from datetime import datetime
-from typing import AsyncGenerator, List, Dict
+from typing import AsyncGenerator, List
 from langchain.retrievers import EnsembleRetriever, BM25Retriever
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
@@ -26,45 +26,30 @@ from setup.init import (
 # setting up retrievers from vectorstores with custom tailormade finetuning
 def retrieve_context(question: str) -> List[Document]:
     """Retrieve context from the ensemble retriever based on the user's question."""
-    # init retrievers
-    tag_retriever = tagstore.as_retriever(
-        search_type="similarity_score_threshold",
-        search_kwargs={'k': 10, 
-                    'params': {'embedding': EMBEDDINGS.embed_query(question)},
-                    'fetch_k': 100,
-                    'score_threshold': 0.70,
-                    'lambda_mult': 0.5,
-                    })
+    
+    # Define the common search arguments once
+    common_search_kwargs = {
+        'k': 10,
+        'params': {'embedding': EMBEDDINGS.embed_query(question)},
+        'fetch_k': 100,
+        'score_threshold': 0.70,
+        'lambda_mult': 0.5,
+    }
 
-    user_retriever = userstore.as_retriever(
-        search_type="similarity_score_threshold", 
-        search_kwargs={'k': 10, 
-                'params': {'embedding': EMBEDDINGS.embed_query(question)},
-                'fetch_k': 100,
-                'score_threshold': 0.70,
-                'lambda_mult': 0.5,
-                })
+    # Use a list of vectorstores
+    vectorstores = [tagstore, userstore, questionstore, answerstore]
 
-    question_retriever = questionstore.as_retriever(
-        search_type="similarity_score_threshold",
-        search_kwargs={'k': 10, 
-                    'params': {'embedding': EMBEDDINGS.embed_query(question)},
-                    'fetch_k': 100,
-                    'score_threshold': 0.70,
-                    'lambda_mult': 0.5,
-                    })
-
-    answer_retriever = answerstore.as_retriever(
-        search_type="similarity_score_threshold", 
-        search_kwargs={'k': 10, 
-                    'params': {'embedding': EMBEDDINGS.embed_query(question)},
-                    'fetch_k': 100,
-                    'score_threshold': 0.70,
-                    'lambda_mult': 0.5,
-                    })
+    # Create the retrievers using a list comprehension
+    retrievers = [
+        store.as_retriever(
+            search_type="similarity_score_threshold",
+            search_kwargs=common_search_kwargs
+        )
+        for store in vectorstores
+    ]
 
     ensemble_retriever = EnsembleRetriever(
-        retrievers=[tag_retriever, user_retriever, question_retriever, answer_retriever]
+        retrievers=retrievers
     )
 
     print("---RETRIEVING CONTEXT---")
