@@ -79,9 +79,9 @@ services:
 
   ollama:
     image: ollama/ollama
-    container_name: localLLM
+    container_name: localLLMs
     ports:
-      - "11433:11434"
+      - "11434:11434"
     gpus: all
     restart: unless-stopped
     networks:
