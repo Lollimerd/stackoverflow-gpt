@@ -2,59 +2,14 @@
 import asyncio, os, json, uvicorn, docker
 from datetime import datetime
 from typing import AsyncGenerator, List
-from langchain.retrievers import EnsembleRetriever, BM25Retriever
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
-from langchain_core.documents import Document
 from pydantic import BaseModel
 from urllib.parse import urlparse
 from prompts import analyst_prompt
 from utils.util import format_docs_with_metadata, find_container_by_port
-from setup.init import (
-    tagstore,
-    answerstore,
-    questionstore,
-    userstore,
-    EMBEDDINGS, ANSWER_LLM, graph,
-    NEO4J_URL, NEO4J_USERNAME,
-)
-
-# ===========================================================================================================================================================
-# Setting Up Retrievers from vectorstores for EnsembleRetriever 
-# ===========================================================================================================================================================
-
-# setting up retrievers from vectorstores with custom tailormade finetuning
-def retrieve_context(question: str) -> List[Document]:
-    """Retrieve context from the ensemble retriever based on the user's question."""
-    
-    # Define the common search arguments once
-    common_search_kwargs = {
-        'k': 10,
-        'params': {'embedding': EMBEDDINGS.embed_query(question)},
-        'fetch_k': 100,
-        'score_threshold': 0.70,
-        'lambda_mult': 0.5,
-    }
-
-    # Use a list of vectorstores
-    vectorstores = [tagstore, userstore, questionstore, answerstore]
-
-    # Create the retrievers using a list comprehension
-    retrievers = [
-        store.as_retriever(
-            search_type="similarity_score_threshold",
-            search_kwargs=common_search_kwargs
-        )
-        for store in vectorstores
-    ]
-
-    ensemble_retriever = EnsembleRetriever(
-        retrievers=retrievers
-    )
-
-    print("---RETRIEVING CONTEXT---")
-    # return vectorstore.similarity_search(question, k=6)
-    return ensemble_retriever.invoke(question, k=3)
+from setup.init import ANSWER_LLM, NEO4J_URL, NEO4J_USERNAME
+from tools.custom_tool import retrieve_context
 
 # ===========================================================================================================================================================
 # FastAPI Backend Server 

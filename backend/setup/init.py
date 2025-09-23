@@ -67,67 +67,6 @@ class State(TypedDict):
 # print(f"\nSample embedding dimension: {len(sample_embedding)}")
 
 # ===========================================================================================================================================================
-# Crafting custom cypher retrieval queries
-# ===========================================================================================================================================================
-
-retrieval_query = """
-// 1. Perform a vector similarity search on the 'Question_index'
-CALL db.index.vector.queryNodes('Question_index', 50, $embedding) YIELD node AS question, score AS similarityScore
-
-// 2. Fetch the user who asked the question
-OPTIONAL MATCH (asker:User)-[:ASKED]->(question)
-
-// 3. Collect all tags associated with the question
-OPTIONAL MATCH (question)-[:TAGGED]->(tag:Tag)
-WITH question, similarityScore, asker, COLLECT(DISTINCT tag.name) AS tags
-
-// 4. Collect all answers, and the users who provided them
-OPTIONAL MATCH (answer:Answer)-[:ANSWERS]->(question)
-OPTIONAL MATCH (provider:User)-[:PROVIDED]->(answer)
-WITH question, similarityScore, asker, tags, COLLECT(DISTINCT {
-    id: answer.id,
-    body: answer.body,
-    score: answer.score,
-    is_accepted: answer.is_accepted,
-    creation_date: toString(answer.creation_date),
-    provided_by: {
-        id: provider.id,
-        display_name: provider.display_name,
-        reputation: provider.reputation
-    }
-}) AS answerDetails
-
-// 5. Format and return the final results
-RETURN
-    // The primary text content for retrieval
-    'Title:\n ' + question.title + '\nBody: ' + question.body AS text,
-    
-    // The structured metadata containing all graph context
-    {
-        question_details: {
-            id: question.id,
-            title: question.title,
-            link: question.link,
-            score: question.score,
-            favorite_count: question.favorite_count,
-            creation_date: toString(question.creation_date)
-        },
-        asked_by: {
-            id: asker.id,
-            display_name: asker.display_name,
-            reputation: asker.reputation
-        },
-        tags: tags,
-        answers: answerDetails,
-        simscore: similarityScore
-    } AS metadata,
-    
-    // The similarity score from the initial vector search
-    similarityScore as score
-ORDER BY score DESC
-"""
-
-# ===========================================================================================================================================================
 # Creation of vector index, vectorstores and fulltext for hybrid vector search
 # ===========================================================================================================================================================
 
@@ -166,7 +105,7 @@ def create_vector_stores(graph, EMBEDDINGS, retrieval_query) -> Dict[str, Neo4jV
 
     vectorstores = {}
     
-    # Loop through the configurations and create the vector stores
+    # Loop through the configurations and create the vectorstores & vector indexes
     for config in store_configs:
         label = config["node_label"]
         index_name = f"{label}_index"
@@ -186,10 +125,3 @@ def create_vector_stores(graph, EMBEDDINGS, retrieval_query) -> Dict[str, Neo4jV
         print(f"Created vectorstore for {index_name} index")
         
     return vectorstores
-
-# Create vector stores
-stores = create_vector_stores(graph, EMBEDDINGS, retrieval_query)
-tagstore = stores['tagstore']
-userstore = stores['userstore']
-questionstore = stores['questionstore']
-answerstore = stores['answerstore']
