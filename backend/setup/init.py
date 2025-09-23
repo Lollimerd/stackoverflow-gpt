@@ -54,7 +54,7 @@ graph = Neo4jGraph(
     enhanced_schema=True,
     refresh_schema=True
 )
-# print(f"schema: {graph.schema}")
+print(f"\nschema: {graph.schema}\n")
 
 # define state for application
 class State(TypedDict):
