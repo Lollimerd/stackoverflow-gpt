@@ -87,6 +87,49 @@ services:
     networks:
       - app-network
 
+  # Define the Qdrant service.
+  qdrant:
+    # Use the official Qdrant Docker image.
+    # It's good practice to pin to a specific version for production stability, e.g., qdrant/qdrant:v1.9.2
+    image: qdrant/qdrant:latest
+    
+    # A friendly name for the container to easily identify it.
+    container_name: qdrant_db
+    
+    # Restart policy to ensure the service comes back online after a reboot or crash.
+    restart: always
+    
+    # Map the container's ports to the host machine.
+    ports:
+      # Port 6333 is for the main gRPC API (used by clients).
+      - "6333:6333"
+      # Port 6334 provides access to the web UI and REST API.
+      - "6334:6334"
+      
+    # Define volumes to persist data. This prevents data loss when the container stops or is removed.
+    volumes:
+      # Mount a named volume 'qdrant_data' to the standard storage path inside the container.
+      - qdrant_data:/qdrant/storage
+      
+    # (Optional) Uncomment the following lines to set an API key for added security.
+    # If you enable this, you must include the API key in your client's request headers.
+    # environment:
+    #   - QDRANT__SERVICE__API_KEY=your_super_secret_api_key
+    
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.32.9 # Use a recent stable version
+    container_name: weaviateDB
+    ports:
+      - 8001:8080 # RESTful API
+      - 50051:50051 # gRPC
+    restart: on-failure:0
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      DEFAULT_VECTORIZER_MODULE: 'none' # Use 'none' if providing your own vectors
+      CLUSTER_HOSTNAME: 'node1'
+
   backend:
     build: 
       context: ./backend
@@ -128,7 +171,6 @@ services:
         - OLLAMA_BASE_URL=${OLLAMA_BASE_URL-http://localhost:11433}
     ports:
       - 8502:8502
-
 
 networks:
   app-network:
