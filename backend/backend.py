@@ -100,4 +100,4 @@ async def stream_ask_question(request: QueryRequest) -> StreamingResponse:
 # uvicorn main:app --reload
 if __name__ == "__main__":
     # Run the app with Uvicorn, specifying host and port here
-    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="debug")
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug")
