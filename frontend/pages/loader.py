@@ -1,14 +1,14 @@
 import os, time, requests
 from dotenv import load_dotenv
-from langchain_neo4j import Neo4jGraph, Neo4jVector, GraphCypherQAChain
+from langchain_neo4j import Neo4jGraph
 import streamlit as st
 from streamlit.logger import get_logger
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_ollama import OllamaEmbeddings
 from utils.utils import create_constraints, create_vector_index
 from PIL import Image
 
+# load credential details
 load_dotenv()
-
 url = os.getenv("NEO4J_URL")
 username = os.getenv("NEO4J_USER")
 password = os.getenv("NEO4J_PASS")
@@ -18,7 +18,15 @@ logger = get_logger(__name__)
 
 so_api_base_url = "https://api.stackexchange.com/2.3/search/advanced"
 
-embeddings = OllamaEmbeddings(model="bge-m3", base_url=ollama_base_url, num_ctx=8192)
+embeddings = OllamaEmbeddings(
+    model="jina/jina-embeddings-v2-base-en:latest", 
+    base_url=ollama_base_url, 
+    tfs_z=2.0, # reduce impact of less probable tokens from output
+    mirostat=2.0, # enable mirostat 2.0 sampling for controlling perplexity
+    mirostat_tau=1.0, # output diversity consistent
+    mirostat_eta=0.2, # faster learning rate 
+    num_ctx=8192, # 8k context
+)
 
 # if Neo4j is local, you can go to http://localhost:7474/ to browse the database
 neo4j_graph = Neo4jGraph(
@@ -30,8 +38,7 @@ neo4j_graph = Neo4jGraph(
 create_constraints(neo4j_graph)
 create_vector_index(neo4j_graph)
 
-
-def load_so_data(tag: str = "neo4j", page: int = 1) -> None:
+def load_so_data(tag: str , page: int) -> None:
     parameters = (
         f"?pagesize=100&page={page}&order=desc&sort=creation&answers=1&tagged={tag}"
         "&site=stackoverflow&filter=!*236eb_eL9rai)MOSNZ-6D3Q6ZKb0buI*IVotWaTb"
@@ -54,14 +61,13 @@ def insert_so_data(data: dict) -> None:
     for q in data["items"]:
         question_text = q["title"] + "\n" + q["body_markdown"]
         q["embedding"] = embeddings.embed_query(question_text)
+        time.sleep(0.1)  # to avoid hitting rate limits
         for a in q["answers"]:
             a["embedding"] = embeddings.embed_query(
                 question_text + "\n" + a["body_markdown"]
             )
+            time.sleep(0.1)  # to avoid hitting rate limits
 
-    # Cypher, the query language of Neo4j, is used to import the data
-    # https://neo4j.com/docs/getting-started/cypher-intro/
-    # https://neo4j.com/docs/cypher-cheat-sheet/5/auradb-enterprise/
     import_query = """
     UNWIND $data AS q
     MERGE (question:Question {id:q.question_id}) 
@@ -92,14 +98,12 @@ def insert_so_data(data: dict) -> None:
     """
     neo4j_graph.query(import_query, {"data": data["items"]})
 
-
 # Streamlit
 def get_tag() -> str:
     input_text = st.text_input(
         "Which tag questions do you want to import?", value="neo4j"
     )
     return input_text
-
 
 def get_pages():
     col1, col2 = st.columns(2)
@@ -111,7 +115,6 @@ def get_pages():
         start_page = st.number_input("Start page", step=1, min_value=1)
     st.caption("Only questions with answers will be imported.")
     return (int(num_pages), int(start_page))
-
 
 def render_page():
     # datamodel_image = Image.open("./images/datamodel.png")

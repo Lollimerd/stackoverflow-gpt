@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from urllib.parse import urlparse
-from prompts import analyst_prompt
+from prompts.st_overflow import analyst_prompt
 from utils.util import format_docs_with_metadata, find_container_by_port
 from setup.init import ANSWER_LLM, NEO4J_URL, NEO4J_USERNAME
 from tools.custom_tool import retrieve_context
@@ -100,4 +100,4 @@ async def stream_ask_question(request: QueryRequest) -> StreamingResponse:
 # uvicorn main:app --reload
 if __name__ == "__main__":
     # Run the app with Uvicorn, specifying host and port here
-    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="debug")
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug")
