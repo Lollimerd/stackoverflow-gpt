@@ -1,7 +1,9 @@
 from setup.init import graph, EMBEDDINGS, create_vector_stores
-from langchain.retrievers import EnsembleRetriever, BM25Retriever
+from langchain.retrievers import EnsembleRetriever, ContextualCompressionRetriever
 from typing import List
 from langchain_core.documents import Document
+from langchain.retrievers.document_compressors import CrossEncoderReranker
+from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 
 # ===========================================================================================================================================================
 # Crafting custom cypher retrieval queries
@@ -20,7 +22,7 @@ WITH targetCommunityId, max(score) AS topScore
 
 // 4. Find the main Question node associated with that community. This becomes our context anchor.
 MATCH (question:Question)
-WHERE question.communityId[0] = targetCommunityId
+WHERE targetCommunityId IN question.communityId
 
 // 5. Fetch the user who asked the question.
 OPTIONAL MATCH (asker:User)-[:ASKED]->(question)
@@ -72,7 +74,7 @@ RETURN
     
     // Return the score itself for sorting.
     topScore as score
-ORDER BY score DESC
+ORDER BY score DESC LIMIT 1000
 """
 
 # Create vector stores
@@ -95,7 +97,7 @@ def retrieve_context(question: str) -> List[Document]:
         'k': 10,
         'params': {'embedding': EMBEDDINGS.embed_query(question)},
         'fetch_k': 100,
-        'score_threshold': 0.6,
+        'score_threshold': 0.95,
         'lambda_mult': 0.5,
     }
 
@@ -116,5 +118,24 @@ def retrieve_context(question: str) -> List[Document]:
     )
 
     print("---RETRIEVING CONTEXT---")
-    # return vectorstore.similarity_search(question, k=6)
-    return ensemble_retriever.invoke(question, k=3)
+    # return ensemble_retriever.invoke(question, k=3)
+    # 1. Load the cross-encoder model from sentence-transformers.
+    model = HuggingFaceCrossEncoder(model_name='BAAI/bge-reranker-base')
+    
+    # 2. Initialize the reranker by passing the loaded model object.
+    compressor = CrossEncoderReranker(
+        model=model,
+        top_n=50  # This will return the top n most relevant documents.
+    )
+
+    print("--- 🌐 RETRIEVING AND RERANKING DYNAMIC CONTEXT ---")
+    # reranked_docs = compressor.compress_documents(documents=initial_docs, query=query)
+
+    # 3. Wrap your ensemble retriever with the compression retriever.
+    compression_retriever = ContextualCompressionRetriever(
+        base_compressor=compressor,
+        base_retriever=ensemble_retriever
+    )
+    
+    reranked_docs = compression_retriever.invoke(question, k=3)
+    return reranked_docs

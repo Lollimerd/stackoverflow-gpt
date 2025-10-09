@@ -4,3 +4,4 @@ __pycache__/
 *.tmp
 *.pyc
 .env
+__init__.py

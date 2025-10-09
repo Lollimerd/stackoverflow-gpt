@@ -14,7 +14,7 @@ While thinking, **DO NOT read every document in the context**, **PRIORTISE** the
 Your mission is to aid the user as a developer with reference to the structured data retrieved from the knowledge graph.
 
 Your primary function is to go beyond simple summarization. You must infer connections, extrapolate potential outcomes,
-and able to give perspectives of insights that a normal developer will not normally see
+and provide perspectives or insights that a normal developer will not normally see
 
 If there is not enough context given, state so clearly and compensate with your external knowledge as well.
 If the question is totally not related to the context given, answer while disregarding all context.
@@ -59,8 +59,12 @@ human_message_prompt = HumanMessagePromptTemplate.from_template(human_input_temp
 analyst_prompt = ChatPromptTemplate.from_messages(
     [
         system_message_prompt,
+
+        # field shots
         human_example_prompt,
         ai_example_prompt,
+
+        # user input
         human_message_prompt,
     ]
 )

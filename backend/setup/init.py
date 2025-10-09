@@ -2,8 +2,8 @@
 
 import os, json, time
 from dotenv import load_dotenv
-from langchain_community.embeddings import OllamaEmbeddings
-from langchain_community.chat_models import ChatOllama
+from langchain_ollama import OllamaEmbeddings
+from langchain_ollama import ChatOllama
 from langchain_neo4j import Neo4jGraph, GraphCypherQAChain, Neo4jVector
 from langchain.chains.summarize import load_summarize_chain
 from langgraph.graph import START, StateGraph
@@ -38,13 +38,13 @@ ANSWER_LLM = ChatOllama(
 ) 
 
 EMBEDDINGS = OllamaEmbeddings(
-    model="bge-m3", 
+    model="jina/jina-embeddings-v2-base-en:latest", 
     base_url=OLLAMA_BASE_URL, 
-    show_progress=True, 
     tfs_z=2.0, # reduce impact of less probable tokens from output
     mirostat=2.0, # enable mirostat 2.0 sampling for controlling perplexity
     mirostat_tau=1.0, # output diversity consistent
-    mirostat_eta=0.2 # faster learning rate 
+    mirostat_eta=0.2, # faster learning rate
+    num_ctx=8192, # 8k context
 )
 
 graph = Neo4jGraph(

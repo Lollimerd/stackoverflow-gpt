@@ -1,0 +1,23 @@
+[project]
+name = "stackoverflow-bot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "docker>=7.1.0",
+    "dotenv>=0.9.9",
+    "fastapi>=0.118.1",
+    "langchain>=0.3.27",
+    "langchain-community>=0.3.31",
+    "langchain-huggingface>=0.3.1",
+    "langchain-neo4j>=0.5.0",
+    "langchain-ollama>=0.3.10",
+    "langgraph>=0.6.8",
+    "sentence-transformers>=5.1.1",
+    "streamlit>=1.50.0",
+    "streamlit-mermaid>=0.3.0",
+    "streamlit-timeline>=0.0.2",
+    "tqdm>=4.67.1",
+    "uvicorn>=0.37.0",
+]

@@ -437,11 +437,11 @@
       "index": "a7",
       "roundness": null,
       "seed": 582708470,
-      "version": 490,
-      "versionNonce": 309386703,
+      "version": 494,
+      "versionNonce": 1046762827,
       "isDeleted": false,
       "boundElements": [],
-      "updated": 1754915379582,
+      "updated": 1758965336150,
       "link": null,
       "locked": false,
       "text": "GraphRAG enhancements:\nhybrid search of:\nvector similarity search (cosine distance)\nfull text search (keyword based)\n\nprompt:\nstep back (tbd)\n\nquery rewriting:\n\nreranking: \nensemble retriver\nbm25 retriever (tbd)",
@@ -496,7 +496,7 @@
     "gridSize": 20,
     "gridStep": 5,
     "gridModeEnabled": false,
-    "viewBackgroundColor": "#fdf8f6"
+    "viewBackgroundColor": "#000000"
   },
   "files": {}
 }
