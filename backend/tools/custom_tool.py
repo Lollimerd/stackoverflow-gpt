@@ -74,7 +74,7 @@ RETURN
     
     // Return the score itself for sorting.
     topScore as score
-ORDER BY score DESC LIMIT 1000
+ORDER BY score DESC LIMIT 100
 """
 
 # Create vector stores
@@ -120,12 +120,12 @@ def retrieve_context(question: str) -> List[Document]:
     print("---RETRIEVING CONTEXT---")
     # return ensemble_retriever.invoke(question, k=3)
     # 1. Load the cross-encoder model from sentence-transformers.
-    model = HuggingFaceCrossEncoder(model_name='BAAI/bge-reranker-base')
+    model = HuggingFaceCrossEncoder(model_name='BAAI/bge-reranker-large')  # Use 'cuda' if you have a GPU available.
     
     # 2. Initialize the reranker by passing the loaded model object.
     compressor = CrossEncoderReranker(
         model=model,
-        top_n=50  # This will return the top n most relevant documents.
+        top_n=20  # This will return the top n most relevant documents.
     )
 
     print("--- 🌐 RETRIEVING AND RERANKING DYNAMIC CONTEXT ---")
@@ -137,5 +137,5 @@ def retrieve_context(question: str) -> List[Document]:
         base_retriever=ensemble_retriever
     )
     
-    reranked_docs = compression_retriever.invoke(question, k=3)
+    reranked_docs = compression_retriever.invoke(question, k=1)
     return reranked_docs

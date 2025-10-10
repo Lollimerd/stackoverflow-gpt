@@ -117,9 +117,8 @@ active_chat = get_active_chat()
 st.title(f"🧠 Lollimerd's AI ")
 st.header("""**:violet-badge[:material/star: OSU GPT]** **:blue-badge[:material/star: Ollama]** **:green-badge[:material/Verified: Mixture of Experts (MOE) model -> Qwen3]** **:blue-badge[:material/component_exchange: GraphRAG]**
 """)
-st.markdown("""Ask a question to get a real-time analysis from the knowledge graph. Feel free to ask it whatever your queries may be. You can ask anything about the context within pressum compile for now.  
-            Be specific in what you are asking, create table, generate graph of asking for data within a specified duration of time. Inferences, analysis and predictions are supported too  
-            :)
+st.markdown("""Ask a question to get a real-time analysis from the knowledge graph. Feel free to ask the bot whatever your queries may be.
+            Be specific in what you are asking, create table, generate graph of asking for data within a specified duration of time. Inferences, analysis and predictions are supported too :)
 """)
 st.subheader(body=f"Welcome back, {name} ⎛⎝ ≽  >  ⩊   < ≼ ⎠⎞")
 
