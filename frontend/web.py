@@ -147,19 +147,13 @@ if prompt := st.chat_input("Ask your question..."):
 
     with st.chat_message("assistant"):
         with st.spinner("Analyzing graph data..."):
-            thought_expander = st.expander("Show Agent Thoughts")
-            thought_placeholder = thought_expander.empty()
-            answer_placeholder = st.empty()
-            thought_content = ""
-            answer_content = ""
-
             thought_placeholder = st.expander("Show Agent Thoughts").empty()
             answer_placeholder = st.empty()
             thought_content = ""
             answer_content = ""
 
             try:
-                timeout = httpx.Timeout(60, read=60) # none = no timeout, 
+                timeout = httpx.Timeout(300, read=300) # none = no timeout, 
                 with httpx.Client(timeout=timeout) as client:
                     with connect_sse(client, "POST", FASTAPI_URL, json={"question": prompt}) as event_source:
                         for sse in event_source.iter_sse():
@@ -169,15 +163,13 @@ if prompt := st.chat_input("Ask your question..."):
                                     data = json.loads(sse.data)
 
                                     # Append chunks to full strings
-                                    answer_content += data.get("content", "")
-                                    thought_content += data.get("reasoning_content", "▌")
+                                    answer_content += data.get("content")
+                                    thought_content += data.get("reasoning_content")
 
                                     # Display the current accumulated output in the UI
-                                    answer_placeholder.markdown(answer_content + "")
+                                    answer_placeholder.markdown(answer_content)
                                     if thought_content:
-                                        thought_placeholder.code(
-                                            thought_content, language="markdown"
-                                        )
+                                        thought_placeholder.code(thought_content, language="markdown")
 
                                 except json.JSONDecodeError:
                                     st.error(f"Error decoding JSON: {sse.data}")
