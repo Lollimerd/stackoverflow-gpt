@@ -123,7 +123,7 @@ def retrieve_context(question: str) -> List[Document]:
     print("---RETRIEVING CONTEXT---")
     # return ensemble_retriever.invoke(question, k=3)
     # 1. Load the cross-encoder model from sentence-transformers.
-    model = HuggingFaceCrossEncoder(model_name='BAAI/bge-reranker-large')  # Use 'cuda' if you have a GPU available.
+    model = HuggingFaceCrossEncoder(model_name='BAAI/bge-reranker-base')  # Use 'cuda' if you have a GPU available.
     
     # 2. Initialize the reranker by passing the loaded model object.
     compressor = CrossEncoderReranker(
