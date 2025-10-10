@@ -1,7 +1,7 @@
 # app.py
-import json, requests, datetime
+import json, requests, datetime, uuid, httpx
+from httpx_sse import connect_sse
 import streamlit as st
-import uuid # Used to generate unique IDs for chats
 # from loader import render_page
 from datetime import datetime
 import streamlit.components.v1 as components
@@ -117,9 +117,8 @@ active_chat = get_active_chat()
 st.title(f"🧠 Lollimerd's AI ")
 st.header("""**:violet-badge[:material/star: OSU GPT]** **:blue-badge[:material/star: Ollama]** **:green-badge[:material/Verified: Mixture of Experts (MOE) model -> Qwen3]** **:blue-badge[:material/component_exchange: GraphRAG]**
 """)
-st.markdown("""Ask a question to get a real-time analysis from the knowledge graph. Feel free to ask it whatever your queries may be. You can ask anything about the context within pressum compile for now.  
-            Be specific in what you are asking, create table, generate graph of asking for data within a specified duration of time. Inferences, analysis and predictions are supported too  
-            :)
+st.markdown("""Ask a question to get a real-time analysis from the knowledge graph. Feel free to ask the bot whatever your queries may be.
+            Be specific in what you are asking, create table, generate graph of asking for data within a specified duration of time. Inferences, analysis and predictions are supported too :)
 """)
 st.subheader(body=f"Welcome back, {name} ⎛⎝ ≽  >  ⩊   < ≼ ⎠⎞")
 
@@ -154,54 +153,53 @@ if prompt := st.chat_input("Ask your question..."):
             thought_content = ""
             answer_content = ""
 
-            THINK_START_TAG = "<|THINK_START|>"
-            THINK_END_TAG = "<|THINK_END|>"
+            thought_placeholder = st.expander("Show Agent Thoughts").empty()
+            answer_placeholder = st.empty()
+            thought_content = ""
+            answer_content = ""
+
             try:
-                is_thinking = False
-                buffer = ""
-                
-                with requests.post(FASTAPI_URL, json={"question": prompt}, stream=True) as r:
-                    r.raise_for_status()
-                    
-                    for chunk in r.iter_content(chunk_size=32, decode_unicode=True):
-                        buffer += chunk
-                        
-                        while True:
-                            if is_thinking:
-                                if THINK_END_TAG in buffer:
-                                    thought_part, remainder = buffer.split(THINK_END_TAG, 1)
-                                    thought_content += thought_part
-                                    thought_placeholder.markdown(thought_content)
-                                    buffer = remainder
-                                    is_thinking = False
-                                else:
-                                    thought_content += buffer
-                                    thought_placeholder.markdown(thought_content)
-                                    buffer = ""
-                                    break
-                            else:
-                                if THINK_START_TAG in buffer:
-                                    answer_part, remainder = buffer.split(THINK_START_TAG, 1)
-                                    answer_content += answer_part
-                                    answer_placeholder.markdown(answer_content + " ▌")
-                                    buffer = remainder
-                                    is_thinking = True
-                                else:
-                                    answer_content += buffer
-                                    answer_placeholder.markdown(answer_content + " ▌")
-                                    buffer = ""
-                                    break
+                timeout = httpx.Timeout(60, read=60) # none = no timeout, 
+                with httpx.Client(timeout=timeout) as client:
+                    with connect_sse(client, "POST", FASTAPI_URL, json={"question": prompt}) as event_source:
+                        for sse in event_source.iter_sse():
+                            if sse.data:
+                                try:
+                                    # Parse the JSON payload from the SSE event
+                                    data = json.loads(sse.data)
+
+                                    # Append chunks to full strings
+                                    answer_content += data.get("content", "")
+                                    thought_content += data.get("reasoning_content", "▌")
+
+                                    # Display the current accumulated output in the UI
+                                    answer_placeholder.markdown(answer_content + "")
+                                    if thought_content:
+                                        thought_placeholder.code(
+                                            thought_content, language="markdown"
+                                        )
+
+                                except json.JSONDecodeError:
+                                    st.error(f"Error decoding JSON: {sse.data}")
+                                    continue
 
                 # --- Final Processing and Rendering ---
                 render_message_with_mermaid(thought_content)
                 render_message_with_mermaid(answer_content)
 
                 # Append the final response to the active chat's message list
-                active_chat["messages"].append({"role": "assistant", 
-                                                "content": answer_content, 
-                                                "thought": thought_content,
-                                                "timestamp": datetime.now().strftime("%H:%M:%S")})
-                st.rerun() # Rerun to update the chat list in the sidebar if the title changed
+                active_chat["messages"].append(
+                    {
+                        "role": "assistant",
+                        "thought": thought_content,
+                        "content": answer_content,
+                    }
+                )
+                st.rerun()  # Rerun to update the chat list in the sidebar if the title changed
 
+            except httpx.TimeoutException as e:
+                st.error(f"The request timed out. The server is taking too long to respond. Please try again later.")
+                # It's also good practice to log the error for debugging
+                print(f"ERROR: httpx.TimeoutException - {e}")
             except requests.exceptions.RequestException as e:
                 st.error(f"Could not connect to the API. Error: {e}")
