@@ -21,10 +21,6 @@ so_api_base_url = "https://api.stackexchange.com/2.3/search/advanced"
 embeddings = OllamaEmbeddings(
     model="jina/jina-embeddings-v2-base-en:latest", 
     base_url=ollama_base_url, 
-    tfs_z=2.0, # reduce impact of less probable tokens from output
-    mirostat=2.0, # enable mirostat 2.0 sampling for controlling perplexity
-    mirostat_tau=1.0, # output diversity consistent
-    mirostat_eta=0.2, # faster learning rate 
     num_ctx=8192, # 8k context
 )
 
@@ -83,12 +79,12 @@ def insert_so_data(data: dict) -> None:
     for q in data["items"]:
         question_text = q["title"] + "\n" + q["body_markdown"]
         q["embedding"] = embeddings.embed_query(question_text)
-        time.sleep(0.1)  # to avoid hitting rate limits
+        time.sleep(0.001)  # to avoid hitting rate limits
         for a in q["answers"]:
             a["embedding"] = embeddings.embed_query(
                 question_text + "\n" + a["body_markdown"]
             )
-            time.sleep(0.1)  # to avoid hitting rate limits
+            time.sleep(0.001)  # to avoid hitting rate limits
 
     import_query = """
     UNWIND $data AS q
@@ -152,9 +148,10 @@ def render_page():
             try:
                 for page in range(1, num_pages + 1): # add rate limit here
                     load_so_data(user_input, start_page + (page - 1))
-                    time.sleep(0.2)  # to avoid hitting rate limits
+                    time.sleep(0.1)  # to avoid hitting rate limits
+                    st.info(f"Imported page {page} with tag: '{user_input}'")
                 st.success("Import successful", icon="✅")
-                st.caption("Data model")
+                # st.caption("Data model")
                 # st.image(datamodel_image)
                 st.caption("Go to http://localhost:7473/ to interact with the database")
             except Exception as e:
