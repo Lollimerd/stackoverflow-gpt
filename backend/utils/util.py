@@ -27,26 +27,28 @@ def find_container_by_port(port: int) -> str:
     except Exception as e:
         return f"An error occurred: {e}"
     
-def format_docs_with_metadata(docs: List[Document]) -> str:
-    """
-    Formats a list of Documents into a single string, where each
-    document's page_content is followed by its corresponding metadata.
-    """
-    # Create a list of formatted strings, one for each document
+def format_docs_with_metadata(docs: list[Document]) -> str:
+    """Formats documents into a single string for the context."""
     formatted_blocks = []
     for doc in docs:
-        # Format metadata as key: value pairs, one per line
+        # metadata_str = json.dumps(doc.metadata, indent=2)
         metadata_items = [f"{key}: {value}" for key, value in doc.metadata.items()]
         metadata_str = "\n".join(metadata_items)
-
-        # Create a combined block for the document's content and its metadata
         block = (
-            f"--------- CONTENT ---------\n"
+            f"\n--------- CONTENT ---------\n"
             f"{doc.page_content}\n"
             f"--------- METADATA ---------\n"
             f"{metadata_str}"
         )
         formatted_blocks.append(block)
 
-    # Join all the individual document blocks with a clear separator
-    return "\n\n"+"="*50+"\n\n".join(formatted_blocks)
+    # Combine all the individual document blocks with a clear separator
+    final_context_str = "\n\n" + "=" * 100 + "\n\n".join(formatted_blocks)
+
+    # --- ✨ NEW: Added print statements for debugging retrieved context ---
+    print("\n" + "=" * 100)
+    print("--- 📄 RETRIEVED CONTEXT FOR LLM ---")
+    print(final_context_str)
+    print(f"\n--- 📊 Documents retrieved: {len(docs)} ---")
+    print("=" * 100 + "\n")
+    return final_context_str

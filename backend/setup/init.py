@@ -35,6 +35,7 @@ ANSWER_LLM = ChatOllama(
     mirostat=2.0, # enable mirostat 2.0 sampling for controlling perplexity
     mirostat_tau=8.0, # output diversity
     mirostat_eta=0.2, # learning rate, responsiveness
+    reasoning=True,
 ) 
 
 EMBEDDINGS = OllamaEmbeddings(
