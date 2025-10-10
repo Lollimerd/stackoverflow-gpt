@@ -38,25 +38,47 @@ neo4j_graph = Neo4jGraph(
 create_constraints(neo4j_graph)
 create_vector_index(neo4j_graph)
 
-def load_so_data(tag: str , page: int) -> None:
+def load_so_data(tag: str, page: int) -> None:
+    """load stackoverflow data with a specific tag and page number"""
+    # It's better to manage your key from environment variables
+    api_key = os.getenv("STACKEXCHANGE_API_KEY") 
+    key_param = f"&key={api_key}" if api_key else ""
     parameters = (
-        f"?pagesize=100&page={page}&order=desc&sort=creation&answers=1&tagged={tag}"
-        "&site=stackoverflow&filter=!*236eb_eL9rai)MOSNZ-6D3Q6ZKb0buI*IVotWaTb"
+        f"""?pagesize=100&page={page}&order=desc&sort=creation&answers=1&tagged={tag}
+        &site=stackoverflow&filter=!*236eb_eL9rai)MOSNZ-6D3Q6ZKb0buI*IVotWaTb{key_param}"""
     )
     data = requests.get(so_api_base_url + parameters).json()
-    insert_so_data(data)
+    if "items" in data and data["items"]:
+        if "backoff" in data:
+            wait_time = data["backoff"]
+            st.warning(f"API requested a backoff of {wait_time} seconds.")
+            time.sleep(wait_time)
+        else:
+            insert_so_data(data)
+    else:
+        st.warning(f"No items found on page {page} with tag '{tag}'. Skipping.")
 
 
 def load_high_score_so_data() -> None:
+    """load stackoverflow data with a high score"""
     parameters = (
-        f"?fromdate=1664150400&order=desc&sort=votes&site=stackoverflow&"
-        "filter=!.DK56VBPooplF.)bWW5iOX32Fh1lcCkw1b_Y6Zkb7YD8.ZMhrR5.FRRsR6Z1uK8*Z5wPaONvyII"
+        f"""?fromdate=1664150400&order=desc&sort=votes&site=stackoverflow&
+        filter=!.DK56VBPooplF.)bWW5iOX32Fh1lcCkw1b_Y6Zkb7YD8.ZMhrR5.FRRsR6Z1uK8*Z5wPaONvyII"""
     )
     data = requests.get(so_api_base_url + parameters).json()
-    insert_so_data(data)
+    if "items" in data and data["items"]:
+        if "backoff" in data:
+            wait_time = data["backoff"]
+            st.warning(f"API requested a backoff of {wait_time} seconds.")
+            time.sleep(wait_time)
+        else:
+            insert_so_data(data)
+    else:
+        st.warning("No highly ranked items found. Skipping.")
 
 
 def insert_so_data(data: dict) -> None:
+    """Insert StackOverflow data into Neo4j."""
     # Calculate embedding values for questions and answers
     for q in data["items"]:
         question_text = q["title"] + "\n" + q["body_markdown"]
@@ -130,7 +152,7 @@ def render_page():
             try:
                 for page in range(1, num_pages + 1): # add rate limit here
                     load_so_data(user_input, start_page + (page - 1))
-                    time.sleep(0.1)  # to avoid hitting rate limits
+                    time.sleep(0.2)  # to avoid hitting rate limits
                 st.success("Import successful", icon="✅")
                 st.caption("Data model")
                 # st.image(datamodel_image)
