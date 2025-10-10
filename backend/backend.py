@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 from prompts.st_overflow import analyst_prompt
 from utils.util import format_docs_with_metadata, find_container_by_port
 from setup.init import ANSWER_LLM, NEO4J_URL, NEO4J_USERNAME
-from tools.custom_tool import retrieve_context
+from tools.custom_tool import graph_rag_chain
 
 # ===========================================================================================================================================================
 # FastAPI Backend Server 
@@ -41,61 +41,32 @@ def get_configuration():
         "neo4j_user": NEO4J_USERNAME,
     }
 
-# and the provided context inside <think></think> tags
+# --- ✨ REFACTORED: Streaming Endpoint with Thinking Handler ---
 @app.post("/stream-ask")
 async def stream_ask_question(request: QueryRequest) -> StreamingResponse:
-    async def stream_generator() -> AsyncGenerator[str, None]:
-        # --- Prepare context and chain (remains the same) ---
-        context_docs = await asyncio.to_thread(retrieve_context, request.question)
-        context_str = format_docs_with_metadata(context_docs)
-        print(context_str)
-        print(f"documents retrieved: {len(context_docs)}")
-        
-        print("\nSetting up Pipeline...")
-        chain = analyst_prompt | ANSWER_LLM
-        print("\npreparing streaming answers")
+    """This endpoint uses the agentic_router and re-implements the logic
+    to parse <think> tags from the LLM's output stream, sending special
+    tokens to the frontend to render the thinking process.
+    """
+    async def stream_generator() -> AsyncGenerator[str]:
+        print(f"\n--- 💡 INCOMING QUESTION: '{request.question}' ---")
 
-        # Special tags to signal thought blocks to the frontend
-        THINK_START_TAG = "<|THINK_START|>"
-        THINK_END_TAG = "<|THINK_END|>"
+        async for chunk in graph_rag_chain.astream({"question": request.question}):
+            # Extract content and reasoning
+            content_chunk = chunk.content
+            reasoning_chunk = chunk.additional_kwargs.get("reasoning_content", "")
 
-        # --- Streaming logic ---
-        buffer = ""
-        # Get the raw stream of content from the LLM
-        async for chunk in chain.astream({"question": request.question, "context": context_str}):
-            buffer += chunk.content
+            # Create a dictionary for this stream chunk
+            event_data = {
+                "content": content_chunk,
+                "reasoning_content": reasoning_chunk,
+            }
 
-            # Check for <think> tags and replace them with our special tags
-            if "<think>" in buffer:
-                # Isolate the text before the tag and yield it
-                pre_think_text, think_block = buffer.split("<think>", 1)
-                yield pre_think_text
-                # Yield the start tag and update the buffer
-                yield THINK_START_TAG
-                buffer = think_block
-                print("model thinking")
+            # Format as an SSE data payload
+            yield f"data: {json.dumps(event_data)}\n\n"
 
-            if "</think>" in buffer:
-                # Isolate the thought content
-                thought_content, post_think_text = buffer.split("</think>", 1)
-                yield thought_content
-                # Yield the end tag and update the buffer
-                yield THINK_END_TAG
-                buffer = post_think_text
-                print("outputing answers")
-
-            # Yield any text that doesn't contain tags
-            if THINK_START_TAG not in buffer and THINK_END_TAG not in buffer:
-                yield buffer
-                buffer = ""
-
-        # Yield any final text remaining in the buffer
-        if buffer:
-            yield buffer
-    
-    print("done")
-    # The media type is now plain text
-    return StreamingResponse(stream_generator(), media_type="application/json")
+    # The media type is now plain text to stream the raw content and tags.
+    return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
 # uvicorn main:app --reload
 if __name__ == "__main__":
