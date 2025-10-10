@@ -1,14 +1,17 @@
-from setup.init import graph, EMBEDDINGS, create_vector_stores
+from setup.init import graph, EMBEDDINGS, create_vector_stores, ANSWER_LLM
 from langchain.retrievers import EnsembleRetriever, ContextualCompressionRetriever
 from typing import List
 from langchain_core.documents import Document
 from langchain.retrievers.document_compressors import CrossEncoderReranker
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+from prompts.st_overflow import analyst_prompt
+from langchain_core.tools import Tool
+from langchain_core.runnables import RunnablePassthrough
+from utils.util import format_docs_with_metadata
 
 # ===========================================================================================================================================================
 # Crafting custom cypher retrieval queries
 # ===========================================================================================================================================================
-
 retrieval_query = """
 // 1. Start with the node found by the vector search (passed in by LangChain as `node` and `score`).
 WITH node, score
@@ -139,3 +142,11 @@ def retrieve_context(question: str) -> List[Document]:
     
     reranked_docs = compression_retriever.invoke(question, k=1)
     return reranked_docs
+
+# --- Route 1: The GraphRAG Chain ---
+# This chain is activated when the router classifies the question for GraphRAG.
+graph_rag_chain = (# human printable format
+    RunnablePassthrough.assign(context=lambda x: format_docs_with_metadata(retrieve_context(x["question"])))
+    | analyst_prompt # system prompt, field-shots, user context formatting
+    | ANSWER_LLM
+)
