@@ -163,11 +163,11 @@ if prompt := st.chat_input("Ask your question..."):
                                     data = json.loads(sse.data)
 
                                     # Append chunks to full strings
-                                    answer_content += data.get("content")
-                                    thought_content += data.get("reasoning_content")
+                                    answer_content += data.get("content", "")
+                                    thought_content += data.get("reasoning_content", "")
 
                                     # Display the current accumulated output in the UI
-                                    answer_placeholder.markdown(answer_content)
+                                    answer_placeholder.markdown(answer_content + "▌") # Typing cursor effect
                                     if thought_content:
                                         thought_placeholder.code(thought_content, language="markdown")
 
