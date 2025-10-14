@@ -146,10 +146,11 @@ def render_page():
     if st.button("Import", type="primary"):
         with st.spinner("Loading... This might take a minute or two."):
             try:
+                info_placeholder = st.empty()  # Create an empty placeholder
                 for page in range(1, num_pages + 1): # add rate limit here
                     load_so_data(user_input, start_page + (page - 1))
                     time.sleep(0.1)  # to avoid hitting rate limits
-                    st.info(f"Imported page {page} with tag: '{user_input}'")
+                    info_placeholder.info(f"Imported page {start_page + (page - 1)} with tag: '{user_input}'")
                 st.success("Import successful", icon="✅")
                 # st.caption("Data model")
                 # st.image(datamodel_image)
