@@ -182,7 +182,7 @@ def retrieve_context(question: str) -> List[Document]:
         base_retriever=ensemble_retriever
     )
     
-    reranked_docs = compression_retriever.invoke(question, k=3)
+    reranked_docs = compression_retriever.invoke(question)
     return reranked_docs
 
 # --- Route 1: The GraphRAG Chain ---
