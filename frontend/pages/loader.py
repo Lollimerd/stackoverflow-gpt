@@ -67,8 +67,6 @@ def load_so_data(tag: str, page: int) -> dict:
             elif "error_name" in data:
                 backoff_time = min(300, 2 ** (page % 8))  # Max 300 seconds
                 time.sleep(backoff_time)
-            elif "backoff" in data:
-                time.sleep(data["backoff"])
             insert_so_data(data)
             return {"status": "success", "tag": tag, "page": page, "count": len(data["items"])}
         else:
