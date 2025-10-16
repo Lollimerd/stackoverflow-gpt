@@ -25,6 +25,12 @@ embeddings = OllamaEmbeddings(
     num_ctx=8192, # 8k context
 )
 
+embedding_sub = OllamaEmbeddings(
+    model="embeddinggemma:300m", 
+    base_url=ollama_base_url, 
+    num_ctx=2048, # 2k context
+)
+
 # if Neo4j is local, you can go to http://localhost:7474/ to browse the database
 neo4j_graph = Neo4jGraph(
     url=url, 
@@ -61,6 +67,8 @@ def load_so_data(tag: str, page: int) -> dict:
             elif "error_name" in data:
                 backoff_time = min(300, 2 ** (page % 8))  # Max 300 seconds
                 time.sleep(backoff_time)
+            elif "backoff" in data:
+                time.sleep(data["backoff"])
             insert_so_data(data)
             return {"status": "success", "tag": tag, "page": page, "count": len(data["items"])}
         else:
@@ -94,12 +102,12 @@ def insert_so_data(data: dict) -> None:
     for q in data["items"]:
         question_text = q["title"] + "\n" + q["body_markdown"]
         q["embedding"] = embeddings.embed_query(question_text)
-        time.sleep(0.5)  # to avoid hitting rate limits
+        time.sleep(0.1)  # to avoid hitting rate limits
         for a in q["answers"]:
             a["embedding"] = embeddings.embed_query(
                 question_text + "\n" + a["body_markdown"]
             )
-            time.sleep(0.5)  # to avoid hitting rate limits
+            time.sleep(0.1)  # to avoid hitting rate limits
 
     neo4j_graph.query(import_query, {"data": data["items"]})
 
@@ -141,7 +149,7 @@ def render_page():
             completed_tasks = 0
             total_imported_count = 0
             
-            with ThreadPoolExecutor(max_workers=8) as executor:
+            with ThreadPoolExecutor(max_workers=4) as executor:
                 futures = [
                     executor.submit(load_so_data, tag, start_page + i)
                     for tag in tags_to_import
@@ -149,7 +157,7 @@ def render_page():
                 ]
 
                 for future in as_completed(futures):
-                    time.sleep(0.5)
+                    time.sleep(0.1)
                     completed_tasks += 1
                     result = future.result() # This will not raise an error now
                     
