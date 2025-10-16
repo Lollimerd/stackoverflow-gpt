@@ -110,7 +110,7 @@ def retrieve_context(question: str) -> List[Document]:
         'k': 10,
         'params': {'embedding': EMBEDDINGS.embed_query(question)},
         'fetch_k': 100,
-        'score_threshold': 0.65,
+        'score_threshold': 0.85,
         'lambda_mult': 0.5,
     }
 
