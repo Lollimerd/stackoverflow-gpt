@@ -61,11 +61,12 @@ def load_so_data(tag: str, page: int) -> dict:
         data = response.json()
 
         if "items" in data and data["items"]:
-            if "error_name" in data:
+            # Handle API backoff requests
+            if "backoff" in data:
+                time.sleep(data["backoff"])
+            elif "error_name" in data:
                 backoff_time = min(300, 2 ** (page % 8))  # Max 300 seconds
-                st.warning(f"API requested a backoff of {backoff_time} seconds.")
                 time.sleep(backoff_time)
-
             insert_so_data(data)
             return {"status": "success", "tag": tag, "page": page, "count": len(data["items"])}
         else:

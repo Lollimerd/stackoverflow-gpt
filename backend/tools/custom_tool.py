@@ -1,5 +1,4 @@
-from setup.init import graph, EMBEDDINGS, create_vector_stores, ANSWER_LLM, RERANKER_MODEL
-from langchain.retrievers.document_compressors import CrossEncoderReranker
+from setup.init import graph, EMBEDDINGS, create_vector_stores, ANSWER_LLM, compressor
 from langchain.retrievers import EnsembleRetriever, ContextualCompressionRetriever
 from typing import List
 from langchain_core.documents import Document
@@ -128,12 +127,6 @@ userstore = stores['userstore']
 questionstore = stores['questionstore']
 answerstore = stores['answerstore']
 
-# set up reranker model
-compressor = CrossEncoderReranker(
-        model=RERANKER_MODEL,
-        top_n=10  # This will return the top n most relevant documents.
-    )
-
 # ===========================================================================================================================================================
 # Setting Up Retrievers from vectorstores for EnsembleRetriever 
 # ===========================================================================================================================================================
@@ -145,8 +138,8 @@ def retrieve_context(question: str) -> List[Document]:
 
     Returns:
         List[Document]: A list of LangChain Document objects, where each document has:
-        - page_content (str): The main text content (e.g., question title and body).
-        - metadata (dict): Structured metadata including question details, user info, tags, answers, and similarity score.
+            - page_content (str): The main text content (e.g., question title and body).
+            - metadata (dict): Structured metadata including question details, user info, tags, answers, and similarity score.
     """
     
     # Define the common search arguments once
