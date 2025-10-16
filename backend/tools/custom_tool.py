@@ -74,7 +74,7 @@ RETURN
     } AS metadata,
     score
 ORDER BY score DESC
-LIMIT 50000
+LIMIT 5000
 """
 
 # Create vector stores
@@ -87,7 +87,7 @@ answerstore = stores['answerstore']
 # set up reranker model
 compressor = CrossEncoderReranker(
         model=RERANKER_MODEL,
-        top_n=20  # This will return the top n most relevant documents.
+        top_n=10  # This will return the top n most relevant documents.
     )
 
 # ===========================================================================================================================================================
@@ -110,7 +110,7 @@ def retrieve_context(question: str) -> List[Document]:
         'k': 10,
         'params': {'embedding': EMBEDDINGS.embed_query(question)},
         'fetch_k': 100,
-        'score_threshold': 0.5,
+        'score_threshold': 0.65,
         'lambda_mult': 0.5,
     }
 
@@ -142,7 +142,7 @@ def retrieve_context(question: str) -> List[Document]:
         base_retriever=ensemble_retriever
     )
     
-    reranked_docs = compression_retriever.invoke(question, k=3)
+    reranked_docs = compression_retriever.invoke(question)
     return reranked_docs
 
 # --- Route 1: The GraphRAG Chain ---

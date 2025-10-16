@@ -32,7 +32,7 @@ def format_docs_with_metadata(docs: list[Document]) -> str:
     formatted_blocks = []
     for doc in docs:
         # Format metadata as key: value pairs, one per line
-        metadata_items = [f"{key}: {value}" for key, value in doc.metadata.items()]
+        metadata_items = [f"\n{key}: {value}" for key, value in doc.metadata.items()]
         metadata_str = "\n".join(metadata_items)
 
         # Create a combined block for the document's content and its metadata

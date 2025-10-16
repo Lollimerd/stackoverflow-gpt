@@ -2,8 +2,6 @@
 import json, requests, datetime, uuid, httpx
 from httpx_sse import connect_sse
 import streamlit as st
-# from loader import render_page
-from datetime import datetime
 import streamlit.components.v1 as components
 from streamlit_timeline import timeline 
 from utils.utils import render_message_with_mermaid, display_container_name, get_system_config
@@ -141,7 +139,7 @@ if prompt := st.chat_input("Ask your question..."):
 
     # Set a title for new chats based on the first message
     if active_chat["title"] == "New Chat" or active_chat["title"].startswith("Chat "):
-        active_chat["title"] = prompt[:10] + "..." # Truncate for display
+        active_chat["title"] = prompt[:15] + "..." # Truncate for display
 
     with st.chat_message("user"):
         st.markdown(prompt)

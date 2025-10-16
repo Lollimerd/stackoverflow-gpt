@@ -85,7 +85,8 @@ def load_high_score_so_data() -> None:
     data = requests.get(so_api_base_url + parameters).json()
     if "items" in data and data["items"]:
         if "error_name" in data:
-            backoff_time = min(300, 2 ** (page % 8))  # Max 300 seconds
+            # backoff_time = min(300, 2 ** (page % 8))  # Max 300 seconds
+            backoff_time = 10  # Fixed backoff time for high score data
             st.warning(f"API requested a backoff of {backoff_time} seconds.")
             time.sleep(backoff_time)
         insert_so_data(data)
