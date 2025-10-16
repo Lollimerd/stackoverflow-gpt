@@ -1,6 +1,7 @@
 import streamlit as st
-import re, hashlib, requests, uuid
+import re, hashlib, requests, uuid, json
 from streamlit_mermaid import st_mermaid
+from typing import List
 
 def extract_title_and_question(input_string):
     lines = input_string.strip().split("\n")
@@ -51,12 +52,8 @@ def create_constraints(driver):
         "CREATE CONSTRAINT tag_name IF NOT EXISTS FOR (t:Tag) REQUIRE (t.name) IS UNIQUE"
     )
 
-
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
-
-import json
-from typing import List
 
 # This is a placeholder for LangChain's Document class
 class Document:
@@ -135,3 +132,32 @@ def get_system_config():
     except requests.exceptions.RequestException as e:
         print(f"Could not fetch config: {e}")
         return None # Return None on failure
+    
+import_query = """
+    UNWIND $data AS q
+    MERGE (question:Question {id:q.question_id}) 
+    ON CREATE SET question.title = q.title, question.link = q.link, question.score = q.score,
+        question.favorite_count = q.favorite_count, question.creation_date = datetime({epochSeconds: q.creation_date}),
+        question.body = q.body_markdown, question.embedding = q.embedding
+    FOREACH (tagName IN q.tags | 
+        MERGE (tag:Tag {name:tagName}) 
+        MERGE (question)-[:TAGGED]->(tag)
+    )
+    FOREACH (a IN q.answers |
+        MERGE (question)<-[:ANSWERS]-(answer:Answer {id:a.answer_id})
+        SET answer.is_accepted = a.is_accepted,
+            answer.score = a.score,
+            answer.creation_date = datetime({epochSeconds:a.creation_date}),
+            answer.body = a.body_markdown,
+            answer.embedding = a.embedding
+        MERGE (answerer:User {id:coalesce(a.owner.user_id, "deleted")}) 
+        ON CREATE SET answerer.display_name = a.owner.display_name,
+                      answerer.reputation= a.owner.reputation
+        MERGE (answer)<-[:PROVIDED]-(answerer)
+    )
+    WITH * WHERE NOT q.owner.user_id IS NULL
+    MERGE (owner:User {id:q.owner.user_id})
+    ON CREATE SET owner.display_name = q.owner.display_name,
+                  owner.reputation = q.owner.reputation
+    MERGE (owner)-[:ASKED]->(question)
+    """

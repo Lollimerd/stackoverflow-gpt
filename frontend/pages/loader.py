@@ -4,8 +4,9 @@ from langchain_neo4j import Neo4jGraph
 import streamlit as st
 from streamlit.logger import get_logger
 from langchain_ollama import OllamaEmbeddings
-from utils.utils import create_constraints, create_vector_index
+from utils.utils import create_constraints, create_vector_index, import_query
 from PIL import Image
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # load credential details
 load_dotenv()
@@ -24,6 +25,12 @@ embeddings = OllamaEmbeddings(
     num_ctx=8192, # 8k context
 )
 
+embedding_sub = OllamaEmbeddings(
+    model="embeddinggemma:300m", 
+    base_url=ollama_base_url, 
+    num_ctx=2048, # 2k context
+)
+
 # if Neo4j is local, you can go to http://localhost:7474/ to browse the database
 neo4j_graph = Neo4jGraph(
     url=url, 
@@ -34,27 +41,39 @@ neo4j_graph = Neo4jGraph(
 create_constraints(neo4j_graph)
 create_vector_index(neo4j_graph)
 
-def load_so_data(tag: str, page: int) -> None:
-    """load stackoverflow data with a specific tag and page number"""
-    # It's better to manage your key from environment variables
-    api_key = os.getenv("STACKEXCHANGE_API_KEY") 
-    key_param = f"&key={api_key}" if api_key else ""
-    parameters = (
-        f"""?pagesize=100&page={page}&order=desc&sort=creation&answers=1&tagged={tag}
-        &site=stackoverflow&filter=!*236eb_eL9rai)MOSNZ-6D3Q6ZKb0buI*IVotWaTb{key_param}"""
-    )
-    data = requests.get(so_api_base_url + parameters).json()
-    if "items" in data and data["items"]:
-        if "backoff" in data:
-            wait_time = data["backoff"]
-            st.warning(f"API requested a backoff of {wait_time} seconds.")
-            time.sleep(wait_time)
-        else:
+def load_so_data(tag: str, page: int) -> dict:
+    """
+    Load Stack Overflow data and handle potential errors gracefully.
+    This function is now designed to run in a background thread and should NOT call any st.* functions.
+    It returns a dictionary indicating the result.
+    """
+    try:
+        api_key = os.getenv("STACKEXCHANGE_API_KEY") 
+        key_param = f"&key={api_key}" if api_key else ""
+        parameters = (
+            f"?pagesize=100&page={page}&order=desc&sort=creation&answers=1&tagged={tag}"
+            f"&site=stackoverflow&filter=!*236eb_eL9rai)MOSNZ-6D3Q6ZKb0buI*IVotWaTb{key_param}"
+        )
+        
+        # Wrap the network request in its own try-except block
+        response = requests.get(so_api_base_url + parameters)
+        response.raise_for_status()  # This will raise an exception for HTTP errors (4xx or 5xx)
+        data = response.json()
+
+        if "items" in data and data["items"]:
+            if "backoff" in data:
+                time.sleep(data["backoff"])
+            
             insert_so_data(data)
-    else:
-        st.warning(f"No items found on page {page} with tag '{tag}'. Skipping.")
-
-
+            return {"status": "success", "tag": tag, "page": page, "count": len(data["items"])}
+        else:
+            return {"status": "empty", "tag": tag, "page": page}
+            
+    except requests.exceptions.RequestException as e:
+        return {"status": "error", "tag": tag, "page": page, "error": f"Network error: {e}"}
+    except Exception as e:
+        return {"status": "error", "tag": tag, "page": page, "error": f"An unexpected error occurred: {e}"}
+    
 def load_high_score_so_data() -> None:
     """load stackoverflow data with a high score"""
     parameters = (
@@ -72,56 +91,29 @@ def load_high_score_so_data() -> None:
     else:
         st.warning("No highly ranked items found. Skipping.")
 
-
 def insert_so_data(data: dict) -> None:
     """Insert StackOverflow data into Neo4j."""
     # Calculate embedding values for questions and answers
     for q in data["items"]:
         question_text = q["title"] + "\n" + q["body_markdown"]
         q["embedding"] = embeddings.embed_query(question_text)
-        time.sleep(0.001)  # to avoid hitting rate limits
+        time.sleep(0.1)  # to avoid hitting rate limits
         for a in q["answers"]:
             a["embedding"] = embeddings.embed_query(
                 question_text + "\n" + a["body_markdown"]
             )
-            time.sleep(0.001)  # to avoid hitting rate limits
+            time.sleep(0.1)  # to avoid hitting rate limits
 
-    import_query = """
-    UNWIND $data AS q
-    MERGE (question:Question {id:q.question_id}) 
-    ON CREATE SET question.title = q.title, question.link = q.link, question.score = q.score,
-        question.favorite_count = q.favorite_count, question.creation_date = datetime({epochSeconds: q.creation_date}),
-        question.body = q.body_markdown, question.embedding = q.embedding
-    FOREACH (tagName IN q.tags | 
-        MERGE (tag:Tag {name:tagName}) 
-        MERGE (question)-[:TAGGED]->(tag)
-    )
-    FOREACH (a IN q.answers |
-        MERGE (question)<-[:ANSWERS]-(answer:Answer {id:a.answer_id})
-        SET answer.is_accepted = a.is_accepted,
-            answer.score = a.score,
-            answer.creation_date = datetime({epochSeconds:a.creation_date}),
-            answer.body = a.body_markdown,
-            answer.embedding = a.embedding
-        MERGE (answerer:User {id:coalesce(a.owner.user_id, "deleted")}) 
-        ON CREATE SET answerer.display_name = a.owner.display_name,
-                      answerer.reputation= a.owner.reputation
-        MERGE (answer)<-[:PROVIDED]-(answerer)
-    )
-    WITH * WHERE NOT q.owner.user_id IS NULL
-    MERGE (owner:User {id:q.owner.user_id})
-    ON CREATE SET owner.display_name = q.owner.display_name,
-                  owner.reputation = q.owner.reputation
-    MERGE (owner)-[:ASKED]->(question)
-    """
     neo4j_graph.query(import_query, {"data": data["items"]})
 
-# Streamlit
-def get_tag() -> str:
+
+# --- Streamlit ---
+def get_tags() -> list[str]:
+    """Gets a comma-separated string of tags and returns a clean list."""
     input_text = st.text_input(
-        "Which tag questions do you want to import?", value="neo4j"
+        "Enter tags separated by commas", value="neo4j, cypher, python"
     )
-    return input_text
+    return [tag.strip() for tag in input_text.split(",") if tag.strip()]
 
 def get_pages():
     col1, col2 = st.columns(2)
@@ -134,36 +126,48 @@ def get_pages():
     st.caption("Only questions with answers will be imported.")
     return (int(num_pages), int(start_page))
 
+# --- Main Page Rendering (Modified Logic) ---
 def render_page():
-    # datamodel_image = Image.open("./images/datamodel.png")
     st.header("StackOverflow Loader")
     st.subheader("Choose StackOverflow tags to load into Neo4j")
     st.caption("Go to http://localhost:7473/ to explore the graph.")
 
-    user_input = get_tag()
+    tags_to_import = get_tags()
     num_pages, start_page = get_pages()
 
     if st.button("Import", type="primary"):
         with st.spinner("Loading... This might take a minute or two."):
-            try:
-                info_placeholder = st.empty()  # Create an empty placeholder
-                for page in range(1, num_pages + 1): # add rate limit here
-                    load_so_data(user_input, start_page + (page - 1))
-                    time.sleep(0.1)  # to avoid hitting rate limits
-                    info_placeholder.info(f"Imported page {start_page + (page - 1)} with tag: '{user_input}'")
-                st.success("Import successful", icon="✅")
-                # st.caption("Data model")
-                # st.image(datamodel_image)
-                st.caption("Go to http://localhost:7473/ to interact with the database")
-            except Exception as e:
-                st.error(f"Error: {e}", icon="🚨")
-    with st.expander("Highly ranked questions rather than tags?"):
-        if st.button("Import highly ranked questions"):
-            with st.spinner("Loading... This might take a minute or two."):
-                try:
-                    load_high_score_so_data()
-                    st.success("Import successful", icon="✅")
-                except Exception as e:
-                    st.error(f"Error: {e}", icon="🚨")
+            info_placeholder = st.empty()
+            error_placeholder = st.container() # A container to log errors
+            
+            tasks_to_complete = len(tags_to_import) * num_pages
+            completed_tasks = 0
+            total_imported_count = 0
+            
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                futures = [
+                    executor.submit(load_so_data, tag, start_page + i)
+                    for tag in tags_to_import
+                    for i in range(num_pages)
+                ]
+
+                for future in as_completed(futures):
+                    time.sleep(0.1)
+                    completed_tasks += 1
+                    result = future.result() # This will not raise an error now
+                    
+                    progress = (completed_tasks / tasks_to_complete) * 100
+                    
+                    if result["status"] == "success":
+                        total_imported_count += result["count"]
+                        info_placeholder.info(f"({progress:.2f}%) ✅ Success: Imported page {result['page']} for tag '{result['tag']}' ({result['count']} items).")
+                    elif result["status"] == "empty":
+                         info_placeholder.info(f"({progress:.2f}%) 🟡 Skipped: No items on page {result['page']} for tag '{result['tag']}'.")
+                    elif result["status"] == "error":
+                        # Log the error to the UI without stopping
+                        error_placeholder.error(f"({progress:.2f}%) ❌ Failed: Page {result['page']} for tag '{result['tag']}'. Reason: {result['error']}")
+
+            st.success(f"Import complete! Successfully imported {total_imported_count} questions.", icon="✅")
+            st.caption("Go to http://localhost:7473/ to interact with the database")
 
 render_page()

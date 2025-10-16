@@ -1,9 +1,7 @@
-from setup.init import graph, EMBEDDINGS, create_vector_stores, ANSWER_LLM
+from setup.init import graph, EMBEDDINGS, create_vector_stores, ANSWER_LLM, RERANKER_MODEL, compressor
 from langchain.retrievers import EnsembleRetriever, ContextualCompressionRetriever
 from typing import List
 from langchain_core.documents import Document
-from langchain.retrievers.document_compressors import CrossEncoderReranker
-from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from prompts.st_overflow import analyst_prompt
 from langchain_core.tools import Tool
 from langchain_core.runnables import RunnablePassthrough
@@ -93,7 +91,14 @@ answerstore = stores['answerstore']
 
 # setting up retrievers from vectorstores with custom tailormade finetuning
 def retrieve_context(question: str) -> List[Document]:
-    """Retrieve context from the ensemble retriever based on the user's question."""
+    """
+    Retrieve context from the ensemble retriever based on the user's question.
+
+    Returns:
+        List[Document]: A list of LangChain Document objects, where each document has:
+            - page_content (str): The main text content (e.g., question title and body).
+            - metadata (dict): Structured metadata including question details, user info, tags, answers, and similarity score.
+    """
     
     # Define the common search arguments once
     common_search_kwargs = {
@@ -116,31 +121,22 @@ def retrieve_context(question: str) -> List[Document]:
         for store in vectorstores
     ]
 
+    # init ensemble retriever
     ensemble_retriever = EnsembleRetriever(
         retrievers=retrievers
     )
 
-    print("---RETRIEVING CONTEXT---")
+    # print("---RETRIEVING CONTEXT---")
     # return ensemble_retriever.invoke(question, k=3)
-    # 1. Load the cross-encoder model from sentence-transformers.
-    model = HuggingFaceCrossEncoder(model_name='BAAI/bge-reranker-base')  # Use 'cuda' if you have a GPU available.
-    
-    # 2. Initialize the reranker by passing the loaded model object.
-    compressor = CrossEncoderReranker(
-        model=model,
-        top_n=20  # This will return the top n most relevant documents.
-    )
 
     print("--- 🌐 RETRIEVING AND RERANKING DYNAMIC CONTEXT ---")
-    # reranked_docs = compressor.compress_documents(documents=initial_docs, query=query)
-
-    # 3. Wrap your ensemble retriever with the compression retriever.
+    # Wrap your ensemble retriever with the compression retriever.
     compression_retriever = ContextualCompressionRetriever(
         base_compressor=compressor,
         base_retriever=ensemble_retriever
     )
     
-    reranked_docs = compression_retriever.invoke(question, k=1)
+    reranked_docs = compression_retriever.invoke(question)
     return reranked_docs
 
 # --- Route 1: The GraphRAG Chain ---

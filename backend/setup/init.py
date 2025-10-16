@@ -4,12 +4,12 @@ import os, json, time
 from dotenv import load_dotenv
 from langchain_ollama import OllamaEmbeddings
 from langchain_ollama import ChatOllama
-from langchain_neo4j import Neo4jGraph, GraphCypherQAChain, Neo4jVector
-from langchain.chains.summarize import load_summarize_chain
-from langgraph.graph import START, StateGraph
+from langchain_neo4j import Neo4jGraph, Neo4jVector
 from typing_extensions import List, TypedDict
 from typing import Dict, Optional
 from langchain_core.documents import Document
+from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+from langchain.retrievers.document_compressors import CrossEncoderReranker
 
 # ===========================================================================================================================================================
 # Step 1: Load Configuration: Docker, Neo4j, Ollama, Langchain
@@ -25,7 +25,6 @@ OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL")
 ANSWER_LLM = ChatOllama(
     model="qwen3:0.6b", # Ensure your model produces <think> tags
     base_url=OLLAMA_BASE_URL, 
-    num_ctx=40968, # 40k
     num_ctx=40968, # 40k
     num_predict=-2, # fill context
     tfs_z=2.0, # reduce impact of less probable tokens from output
@@ -48,6 +47,15 @@ EMBEDDINGS = OllamaEmbeddings(
     mirostat_eta=0.2, # faster learning rate
     num_ctx=8192, # 8k context
 )
+
+RERANKER_MODEL = HuggingFaceCrossEncoder(
+    model_name='BAAI/bge-reranker-base',
+    )  # Use 'cuda' if you have a GPU available.
+
+compressor = CrossEncoderReranker(
+        model=RERANKER_MODEL,
+        top_n=20  # This will return the top n most relevant documents.
+    )
 
 graph = Neo4jGraph(
     url=NEO4J_URL,
