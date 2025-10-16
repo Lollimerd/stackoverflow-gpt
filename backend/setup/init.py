@@ -9,7 +9,6 @@ from typing_extensions import List, TypedDict
 from typing import Dict, Optional
 from langchain_core.documents import Document
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
-from langchain.retrievers.document_compressors import CrossEncoderReranker
 
 # ===========================================================================================================================================================
 # Step 1: Load Configuration: Docker, Neo4j, Ollama, Langchain
@@ -41,21 +40,12 @@ ANSWER_LLM = ChatOllama(
 EMBEDDINGS = OllamaEmbeddings(
     model="jina/jina-embeddings-v2-base-en:latest", 
     base_url=OLLAMA_BASE_URL, 
-    tfs_z=2.0, # reduce impact of less probable tokens from output
-    mirostat=2.0, # enable mirostat 2.0 sampling for controlling perplexity
-    mirostat_tau=1.0, # output diversity consistent
-    mirostat_eta=0.2, # faster learning rate
     num_ctx=8192, # 8k context
 )
 
 RERANKER_MODEL = HuggingFaceCrossEncoder(
     model_name='BAAI/bge-reranker-base',
     )  # Use 'cuda' if you have a GPU available.
-
-compressor = CrossEncoderReranker(
-        model=RERANKER_MODEL,
-        top_n=20  # This will return the top n most relevant documents.
-    )
 
 graph = Neo4jGraph(
     url=NEO4J_URL,
@@ -64,7 +54,7 @@ graph = Neo4jGraph(
     enhanced_schema=True,
     refresh_schema=True
 )
-print(f"\nschema: {graph.schema}\n")
+# print(f"\nschema: {graph.schema}\n")
 
 # define state for application
 class State(TypedDict):

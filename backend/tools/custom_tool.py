@@ -1,4 +1,5 @@
-from setup.init import graph, EMBEDDINGS, create_vector_stores, ANSWER_LLM, RERANKER_MODEL, compressor
+from setup.init import graph, EMBEDDINGS, create_vector_stores, ANSWER_LLM, RERANKER_MODEL
+from langchain.retrievers.document_compressors import CrossEncoderReranker
 from langchain.retrievers import EnsembleRetriever, ContextualCompressionRetriever
 from typing import List
 from langchain_core.documents import Document
@@ -11,71 +12,69 @@ from utils.util import format_docs_with_metadata
 # Crafting custom cypher retrieval queries
 # ===========================================================================================================================================================
 retrieval_query = """
-// 1. Start with the node found by the vector search (passed in by LangChain as `node` and `score`).
-WITH node, score
-
-// 2. Get the Community ID from the hit node. The schema indicates it's a list, so we take the first element.
-WITH node.communityId[0] AS targetCommunityId, score
-
-// 3. For each community identified, find the highest vector similarity score among the hits.
-// This ensures we retrieve the context for each relevant community only once, using its best score.
-WITH targetCommunityId, max(score) AS topScore
-
-// 4. Find the main Question node associated with that community. This becomes our context anchor.
+// Base query starting with vector search results
 MATCH (question:Question)
-WHERE targetCommunityId IN question.communityId
+WHERE question.communityId[0] IN node.communityId
+WITH question, score
 
-// 5. Fetch the user who asked the question.
+// Core question data
+WITH question, score, {
+    id: question.id,
+    title: question.title,
+    body: question.body,
+    link: question.link,
+    score: question.score,
+    favorite_count: question.favorite_count,
+    creation_date: toString(question.creation_date),
+    communityId: question.communityId
+} AS questionDetails
+
+// Fetch asker details
 OPTIONAL MATCH (asker:User)-[:ASKED]->(question)
+WITH question, score, questionDetails, {
+    id: asker.id,
+    display_name: asker.display_name,
+    reputation: asker.reputation
+} AS askerDetails
 
-// 6. Collect all tags associated with the question.
+// Collect tags
 OPTIONAL MATCH (question)-[:TAGGED]->(tag:Tag)
-WITH question, topScore, asker, COLLECT(DISTINCT tag.name) AS tags
+WITH question, score, questionDetails, askerDetails, 
+     COLLECT(DISTINCT tag.name) AS tags
 
-// 7. Collect all answers and the users who provided them.
+// Collect answers with their providers
 OPTIONAL MATCH (answer:Answer)-[:ANSWERS]->(question)
 OPTIONAL MATCH (provider:User)-[:PROVIDED]->(answer)
-WITH question, topScore, asker, tags, COLLECT(DISTINCT {
-    id: answer.id,
-    body: answer.body,
-    score: answer.score,
-    is_accepted: answer.is_accepted,
-    creation_date: toString(answer.creation_date),
-    provided_by: {
-        id: provider.id,
-        display_name: provider.display_name,
-        reputation: provider.reputation
-    }
-}) AS answerDetails
+WITH question, score, questionDetails, askerDetails, tags,
+     COLLECT(DISTINCT {
+        id: answer.id,
+        body: answer.body,
+        score: answer.score,
+        is_accepted: answer.is_accepted,
+        creation_date: toString(answer.creation_date),
+        provided_by: {
+            id: provider.id,
+            display_name: provider.display_name,
+            reputation: provider.reputation
+        }
+     }) AS answers
 
-// 8. Format and return the final results for the LLM.
-RETURN
-    // The primary text content for retrieval (the question's title and body).
+// Return formatted results
+RETURN 
     'Title: ' + question.title + '\nBody: ' + question.body AS text,
-    
-    // The structured metadata containing the full graph context for that question.
     {
-        question_details: {
-            id: question.id,
-            title: question.title,
-            link: question.link,
-            score: question.score,
-            favorite_count: question.favorite_count,
-            creation_date: toString(question.creation_date)
-        },
-        asked_by: {
-            id: asker.id,
-            display_name: asker.display_name,
-            reputation: asker.reputation
-        },
+        question_details: questionDetails,
+        asked_by: askerDetails,
         tags: tags,
-        answers: answerDetails,
-        simscore: topScore // Pass along the highest score for this community.
+        answers: {
+            answers: answers,
+            communityId: question.communityId
+        },
+        simscore: score
     } AS metadata,
-    
-    // Return the score itself for sorting.
-    topScore as score
-ORDER BY score DESC LIMIT 100
+    score
+ORDER BY score DESC
+LIMIT 50000
 """
 
 # Create vector stores
@@ -84,6 +83,12 @@ tagstore = stores['tagstore']
 userstore = stores['userstore']
 questionstore = stores['questionstore']
 answerstore = stores['answerstore']
+
+# set up reranker model
+compressor = CrossEncoderReranker(
+        model=RERANKER_MODEL,
+        top_n=20  # This will return the top n most relevant documents.
+    )
 
 # ===========================================================================================================================================================
 # Setting Up Retrievers from vectorstores for EnsembleRetriever 
@@ -96,8 +101,8 @@ def retrieve_context(question: str) -> List[Document]:
 
     Returns:
         List[Document]: A list of LangChain Document objects, where each document has:
-            - page_content (str): The main text content (e.g., question title and body).
-            - metadata (dict): Structured metadata including question details, user info, tags, answers, and similarity score.
+        - page_content (str): The main text content (e.g., question title and body).
+        - metadata (dict): Structured metadata including question details, user info, tags, answers, and similarity score.
     """
     
     # Define the common search arguments once
@@ -105,7 +110,7 @@ def retrieve_context(question: str) -> List[Document]:
         'k': 10,
         'params': {'embedding': EMBEDDINGS.embed_query(question)},
         'fetch_k': 100,
-        'score_threshold': 0.85,
+        'score_threshold': 0.5,
         'lambda_mult': 0.5,
     }
 
@@ -123,7 +128,8 @@ def retrieve_context(question: str) -> List[Document]:
 
     # init ensemble retriever
     ensemble_retriever = EnsembleRetriever(
-        retrievers=retrievers
+        retrievers=retrievers,
+        # weights=[0.25, 0.25, 0.25, 0.25]  # Adjust weights based on importance
     )
 
     # print("---RETRIEVING CONTEXT---")
@@ -136,7 +142,7 @@ def retrieve_context(question: str) -> List[Document]:
         base_retriever=ensemble_retriever
     )
     
-    reranked_docs = compression_retriever.invoke(question)
+    reranked_docs = compression_retriever.invoke(question, k=3)
     return reranked_docs
 
 # --- Route 1: The GraphRAG Chain ---
