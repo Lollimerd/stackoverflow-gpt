@@ -144,7 +144,7 @@ def render_page():
             completed_tasks = 0
             total_imported_count = 0
             
-            with ThreadPoolExecutor(max_workers=10) as executor:
+            with ThreadPoolExecutor(max_workers=4) as executor:
                 futures = [
                     executor.submit(load_so_data, tag, start_page + i)
                     for tag in tags_to_import
@@ -152,6 +152,7 @@ def render_page():
                 ]
 
                 for future in as_completed(futures):
+                    time.sleep(0.1)
                     completed_tasks += 1
                     result = future.result() # This will not raise an error now
                     
