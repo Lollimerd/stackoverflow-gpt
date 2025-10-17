@@ -6,73 +6,117 @@ from langchain_core.documents import Document
 from prompts.st_overflow import analyst_prompt
 from langchain_core.tools import Tool
 from langchain_core.runnables import RunnablePassthrough
-from utils.util import format_docs_with_metadata
+from utils.util import format_docs_with_metadata, escape_lucene_chars
 
 # ===========================================================================================================================================================
 # Crafting custom cypher retrieval queries
 # ===========================================================================================================================================================
 retrieval_query = """
-// Base query starting with vector search results
-MATCH (question:Question)
-WHERE question.communityId[0] IN node.communityId
-WITH question, score
+// Start from vector search result variables: `node`, `score`
+WITH node, score
+// Route any node type to related Question(s) via UNION branches to avoid implicit grouping
+CALL {
+  WITH node
+  // If node is a Question, use it directly
+  WITH node
+  MATCH (q:Question)
+  WHERE node:Question AND id(q) = id(node)
+  RETURN q
+  UNION
+  // If node is an Answer, route to its Question
+  WITH node
+  MATCH (node:Answer)-[:ANSWERS]->(q:Question)
+  RETURN q
+  UNION
+  // If node is a Tag, route to Questions tagged with it
+  WITH node
+  MATCH (q:Question)-[:TAGGED]->(node:Tag)
+  RETURN q
+  UNION
+  // If node is a User, include Questions they asked
+  WITH node
+  MATCH (node:User)-[:ASKED]->(q:Question)
+  RETURN q
+  UNION
+  // If node is a User, include Questions they answered
+  WITH node
+  MATCH (node:User)-[:PROVIDED]->(:Answer)-[:ANSWERS]->(q:Question)
+  RETURN q
+}
+WITH DISTINCT q AS question, node, score
 
+// Community detection: compute overlap and optionally filter to same community when available
+WITH 
+  question, 
+  node, 
+  score, 
+  any(x IN coalesce(question.communityId, []) WHERE x IN coalesce(node.communityId, [])) AS sameCommunity,
+  (size(coalesce(question.communityId, [])) > 0 AND size(coalesce(node.communityId, [])) > 0) AS bothHaveCommunity
+WHERE NOT bothHaveCommunity OR sameCommunity
+
+// Build rich context for each question
 // Core question data
-WITH question, score, {
-    id: question.id,
-    title: question.title,
-    body: question.body,
-    link: question.link,
-    score: question.score,
-    favorite_count: question.favorite_count,
-    creation_date: toString(question.creation_date),
-    communityId: question.communityId
+WITH DISTINCT question, score, sameCommunity,
+     coalesce(question.communityId, []) AS qComm,
+     coalesce(node.communityId, []) AS nComm,
+     {
+  id: question.id,
+  title: question.title,
+  body: question.body,
+  link: question.link,
+  score: question.score,
+  favorite_count: question.favorite_count,
+  creation_date: toString(question.creation_date)
 } AS questionDetails
 
-// Fetch asker details
+// Askers
 OPTIONAL MATCH (asker:User)-[:ASKED]->(question)
-WITH question, score, questionDetails, {
-    id: asker.id,
-    display_name: asker.display_name,
-    reputation: asker.reputation
+WITH question, score, sameCommunity, qComm, nComm, questionDetails, {
+  id: asker.id,
+  display_name: asker.display_name,
+  reputation: asker.reputation
 } AS askerDetails
 
-// Collect tags
+// Tags
 OPTIONAL MATCH (question)-[:TAGGED]->(tag:Tag)
-WITH question, score, questionDetails, askerDetails, 
+WITH question, score, sameCommunity, qComm, nComm, questionDetails, askerDetails,
      COLLECT(DISTINCT tag.name) AS tags
 
-// Collect answers with their providers
+// Answers + providers
 OPTIONAL MATCH (answer:Answer)-[:ANSWERS]->(question)
 OPTIONAL MATCH (provider:User)-[:PROVIDED]->(answer)
-WITH question, score, questionDetails, askerDetails, tags,
+WITH question, score, sameCommunity, qComm, nComm, questionDetails, askerDetails, tags,
      COLLECT(DISTINCT {
-        id: answer.id,
-        body: answer.body,
-        score: answer.score,
-        is_accepted: answer.is_accepted,
-        creation_date: toString(answer.creation_date),
-        provided_by: {
-            id: provider.id,
-            display_name: provider.display_name,
-            reputation: provider.reputation
-        }
+       id: answer.id,
+       body: answer.body,
+       score: answer.score,
+       is_accepted: answer.is_accepted,
+       creation_date: toString(answer.creation_date),
+       provided_by: {
+         id: provider.id,
+         display_name: provider.display_name,
+         reputation: provider.reputation
+       }
      }) AS answers
 
-// Return formatted results
-RETURN 
-    'Title: ' + question.title + '\nBody: ' + question.body AS text,
-    {
-        question_details: questionDetails,
-        asked_by: askerDetails,
-        tags: tags,
-        answers: {
-            answers: answers,
-            communityId: question.communityId
-        },
-        simscore: score
-    } AS metadata,
-    score
+// Final projection
+RETURN
+  'Title: ' + coalesce(question.title, '') + '\nBody: ' + coalesce(question.body, '') AS text,
+  {
+    question_details: questionDetails,
+    asked_by: askerDetails,
+    tags: tags,
+    answers: {
+      answers: answers
+    },
+    community: {
+      questionCommunityId: qComm,
+      nodeCommunityId: nComm,
+      sameCommunity: sameCommunity
+    },
+    simscore: score
+  } AS metadata,
+  score
 ORDER BY score DESC
 LIMIT 5000
 """
@@ -108,7 +152,10 @@ def retrieve_context(question: str) -> List[Document]:
     # Define the common search arguments once
     common_search_kwargs = {
         'k': 15,
-        'params': {'embedding': EMBEDDINGS.embed_query(question)},
+        'params': {
+            'embedding': EMBEDDINGS.embed_query(question),
+            'keyword_query': escape_lucene_chars(question)
+            },
         'fetch_k': 100,
         'score_threshold': 0.85,
         'lambda_mult': 0.5,

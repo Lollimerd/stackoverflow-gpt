@@ -1,6 +1,15 @@
 from langchain_core.documents import Document
 from typing import List
-import json, docker
+import json, docker, re
+
+def escape_lucene_chars(text: str) -> str:
+    """
+    Escapes special characters in a string for safe use in a Lucene query.
+    """
+    # List of special characters in Lucene syntax
+    special_chars = r'([+\-&|!(){}\[\]^"~*?:\\/])'
+    # Prepend each special character with a backslash
+    return re.sub(special_chars, r'\\\1', text)
 
 # --- Dynamic Container Discovery ---
 def find_container_by_port(port: int) -> str:

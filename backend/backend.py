@@ -6,7 +6,6 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from urllib.parse import urlparse
-from prompts.st_overflow import analyst_prompt
 from utils.util import format_docs_with_metadata, find_container_by_port
 from setup.init import ANSWER_LLM, NEO4J_URL, NEO4J_USERNAME
 from tools.custom_tool import graph_rag_chain
