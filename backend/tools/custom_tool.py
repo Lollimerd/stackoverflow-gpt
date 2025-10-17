@@ -151,7 +151,7 @@ def retrieve_context(question: str) -> List[Document]:
     
     # Define the common search arguments once
     common_search_kwargs = {
-        'k': 15,
+        'k': 25,
         'params': {
             'embedding': EMBEDDINGS.embed_query(question),
             'keyword_query': escape_lucene_chars(question)
@@ -189,7 +189,7 @@ def retrieve_context(question: str) -> List[Document]:
         base_retriever=ensemble_retriever
     )
     
-    reranked_docs = compression_retriever.invoke(question)
+    reranked_docs = compression_retriever.invoke(question, k=3)
     return reranked_docs
 
 # --- Route 1: The GraphRAG Chain ---
