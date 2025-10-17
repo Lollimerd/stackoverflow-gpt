@@ -107,7 +107,7 @@ def retrieve_context(question: str) -> List[Document]:
     
     # Define the common search arguments once
     common_search_kwargs = {
-        'k': 10,
+        'k': 15,
         'params': {'embedding': EMBEDDINGS.embed_query(question)},
         'fetch_k': 100,
         'score_threshold': 0.85,
