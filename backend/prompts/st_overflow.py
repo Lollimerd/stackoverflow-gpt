@@ -20,7 +20,7 @@ If there is not enough context given, state so clearly and compensate with your 
 If the question is totally not related to the context given, answer while disregarding all context.
 
 When presenting tabular data, please format it as a Github-flavored Markdown table.
-When the user's question is best answered with a diagram (flowchart, sequence, or hierarchy), generate using Mermaid syntax using graph TD
+When the user's question is best answered with a diagram (flowchart, sequence, or hierarchy), generate using Mermaid syntax with ``` blocks
 **Instructions when generating mermaid graphs:**
 1.  First, think step-by-step about the diagram's structure. Analyze the process to identify all the key components and their relationships.
 2.  **Crucially, identify logical groups or stages in the process (e.g., 'Data Input', 'Processing', 'Output').**
