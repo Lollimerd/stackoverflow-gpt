@@ -25,12 +25,6 @@ embeddings = OllamaEmbeddings(
     num_ctx=8192, # 8k context
 )
 
-embedding_sub = OllamaEmbeddings(
-    model="embeddinggemma:300m", 
-    base_url=ollama_base_url, 
-    num_ctx=2048, # 2k context
-)
-
 # if Neo4j is local, you can go to http://localhost:7474/ to browse the database
 neo4j_graph = Neo4jGraph(
     url=url, 
@@ -100,12 +94,12 @@ def insert_so_data(data: dict) -> None:
     for q in data["items"]:
         question_text = q["title"] + "\n" + q["body_markdown"]
         q["embedding"] = embeddings.embed_query(question_text)
-        time.sleep(0.1)  # to avoid hitting rate limits
+        time.sleep(0.5)  # to avoid hitting rate limits
         for a in q["answers"]:
             a["embedding"] = embeddings.embed_query(
                 question_text + "\n" + a["body_markdown"]
             )
-            time.sleep(0.1)  # to avoid hitting rate limits
+            time.sleep(0.5)  # to avoid hitting rate limits
 
     neo4j_graph.query(import_query, {"data": data["items"]})
 
@@ -155,7 +149,7 @@ def render_page():
                 ]
 
                 for future in as_completed(futures):
-                    time.sleep(0.1)
+                    time.sleep(0.5)
                     completed_tasks += 1
                     result = future.result() # This will not raise an error now
                     
