@@ -1,11 +1,12 @@
 from setup.init import graph, EMBEDDINGS, create_vector_stores, ANSWER_LLM, compressor
 from langchain.retrievers import EnsembleRetriever, ContextualCompressionRetriever
-from typing import List
+from typing import List, Dict
 from langchain_core.documents import Document
 from prompts.st_overflow import analyst_prompt
 from langchain_core.tools import Tool
 from langchain_core.runnables import RunnablePassthrough
 from utils.util import format_docs_with_metadata, escape_lucene_chars
+from langchain_core.messages import HumanMessage, AIMessage
 
 # ===========================================================================================================================================================
 # Crafting custom cypher retrieval queries
@@ -144,7 +145,7 @@ def retrieve_context(question: str) -> List[Document]:
     
     # Define the common search arguments once
     common_search_kwargs = {
-        'k': 25,
+        'k': 10,
         'params': {
             'embedding': EMBEDDINGS.embed_query(question),
             'keyword_query': escape_lucene_chars(question)
@@ -185,10 +186,30 @@ def retrieve_context(question: str) -> List[Document]:
     reranked_docs = compression_retriever.invoke(question)
     return reranked_docs
 
+def format_chat_history(chat_history: List[Dict[str, str]]) -> str:
+    """Format chat history for inclusion in the prompt."""
+    if not chat_history:
+        return ""
+    
+    formatted_history = []
+    for msg in chat_history:
+        role = msg.get("role", "")
+        content = msg.get("content", "")
+        if role == "user":
+            formatted_history.append(f"User: {content}")
+        elif role == "assistant":
+            # Only include the main content, not the thought process
+            formatted_history.append(f"Assistant: {content}")
+    
+    return "\n".join(formatted_history)
+
 # --- Route 1: The GraphRAG Chain ---
 # This chain is activated when the router classifies the question for GraphRAG.
-graph_rag_chain = (# human printable format
-    RunnablePassthrough.assign(context=lambda x: format_docs_with_metadata(retrieve_context(x["question"])))
-    | analyst_prompt # system prompt, field-shots, user context formatting
+graph_rag_chain = (
+    RunnablePassthrough.assign(
+        context=lambda x: format_docs_with_metadata(retrieve_context(x["question"])),
+        chat_history_formatted=lambda x: format_chat_history(x.get("chat_history", []))
+    )
+    | analyst_prompt
     | ANSWER_LLM
 )

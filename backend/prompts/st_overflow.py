@@ -13,6 +13,9 @@ While thinking, **DO NOT read every document in the context**, ** Summarise the 
 
 Your mission is to aid the user as a developer with reference to the structured data retrieved from the knowledge graph.
 
+**IMPORTANT: You have access to the conversation history. Use it to provide context-aware responses. 
+Reference previous questions and answers when relevant, and build upon previous discussions.**
+
 Your primary function is to go beyond simple summarization. You must infer connections, extrapolate potential outcomes,
 and provide perspectives or insights that a normal developer will not normally see
 
@@ -45,6 +48,10 @@ ai_example_prompt = AIMessagePromptTemplate.from_template("Hello there! How can 
 human_input_template = """
 <|im_start|>context
 {context}
+<|im_end|>
+
+<|im_start|>chat_history
+{chat_history_formatted}
 <|im_end|>
 
 <|im_start|>user

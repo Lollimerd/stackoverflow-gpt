@@ -134,6 +134,9 @@ for message in active_chat["messages"]:
 
 # --- Main Interaction Logic (operates on the active chat) ---
 if prompt := st.chat_input("Ask your question..."):
+    # Get the active chat
+    active_chat = get_active_chat()
+    
     # Append to the active chat's message list
     active_chat["messages"].append({"role": "user", "content": prompt})
 
@@ -152,9 +155,21 @@ if prompt := st.chat_input("Ask your question..."):
             answer_content = ""
 
             try:
-                timeout = httpx.Timeout(300, read=300) # none = no timeout, 
+                timeout = httpx.Timeout(300, read=300)
                 with httpx.Client(timeout=timeout) as client:
-                    with connect_sse(client, "POST", FASTAPI_URL, json={"question": prompt}) as event_source:
+                    # Prepare chat history for the request
+                    chat_history = []
+                    for msg in active_chat["messages"][:-1]:  # Exclude the current message
+                        chat_history.append({
+                            "role": msg["role"],
+                            "content": msg["content"]
+                        })
+                    
+                    # Send request with chat history
+                    with connect_sse(client, "POST", FASTAPI_URL, json={
+                        "question": prompt,
+                        "chat_history": chat_history
+                    }) as event_source:
                         for sse in event_source.iter_sse():
                             if sse.data:
                                 try:

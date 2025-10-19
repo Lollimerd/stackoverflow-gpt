@@ -1,7 +1,7 @@
 # main.py
 import asyncio, os, json, uvicorn, docker
 from datetime import datetime
-from typing import AsyncGenerator, List
+from typing import AsyncGenerator, List, Dict
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -20,7 +20,7 @@ app = FastAPI(title="GraphRAG API", version="1.2.0")
 class QueryRequest(BaseModel):
     """configure question template for answer LLM"""
     question: str
-    # chat_history: List[Dict[str, str]] # e.g., [{"role": "user", "content": "Hi"}, {"role": "assistant", "content": "Hello!"}]
+    chat_history: List[Dict[str, str]] = []  # Uncomment and use this field
 
 @app.get('/')
 def index():
@@ -43,14 +43,16 @@ def get_configuration():
 # --- ✨ REFACTORED: Streaming Endpoint with Thinking Handler ---
 @app.post("/stream-ask")
 async def stream_ask_question(request: QueryRequest) -> StreamingResponse:
-    """This endpoint uses the agentic_router and re-implements the logic
-    to parse <think> tags from the LLM's output stream, sending special
-    tokens to the frontend to render the thinking process.
-    """
+    """This endpoint now includes chat history for context-aware responses."""
     async def stream_generator() -> AsyncGenerator[str]:
         print(f"\n--- 💡 INCOMING QUESTION: '{request.question}' ---")
+        print(f"--- 📚 CHAT HISTORY: {len(request.chat_history)} messages ---")
 
-        async for chunk in graph_rag_chain.astream({"question": request.question}):
+        # Pass chat history to the chain
+        async for chunk in graph_rag_chain.astream({
+            "question": request.question,
+            "chat_history": request.chat_history
+        }):
             # Extract content and reasoning
             content_chunk = chunk.content
             reasoning_chunk = chunk.additional_kwargs.get("reasoning_content", "")
