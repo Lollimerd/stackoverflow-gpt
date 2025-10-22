@@ -180,8 +180,8 @@ if prompt := st.chat_input("Ask your question..."):
                                     answer_content += data.get("content", "")
                                     thought_content += data.get("reasoning_content", "")
 
-                                    # Display the current accumulated output in the UI
-                                    answer_placeholder.markdown(answer_content + "▌") # Typing cursor effect
+                                    # Display the current accumulated output in the UI with typing cursor effect
+                                    answer_placeholder.markdown(answer_content + "▌")
                                     if thought_content:
                                         thought_placeholder.code(thought_content, language="markdown")
 
