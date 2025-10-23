@@ -2,6 +2,7 @@ import streamlit as st
 import re, hashlib, requests, uuid, json
 from streamlit_mermaid import st_mermaid
 from typing import List
+from datetime import datetime
 
 def extract_title_and_question(input_string):
     lines = input_string.strip().split("\n")
@@ -50,6 +51,9 @@ def create_constraints(driver):
     )
     driver.query(
         "CREATE CONSTRAINT tag_name IF NOT EXISTS FOR (t:Tag) REQUIRE (t.name) IS UNIQUE"
+    )
+    driver.query(
+        "CREATE CONSTRAINT importlog_id IF NOT EXISTS FOR (i:ImportLog) REQUIRE (i.id) IS UNIQUE"
     )
 
 def format_docs(docs):
@@ -161,3 +165,74 @@ import_query = """
                   owner.reputation = q.owner.reputation
     MERGE (owner)-[:ASKED]->(question)
     """
+
+def record_import_session(driver, total_questions: int, tags_list: list, total_pages: int):
+    """Record an import session in Neo4j as an ImportLog node."""
+    import_id = str(uuid.uuid4())
+    timestamp = datetime.now().isoformat()
+    
+    query = """
+    CREATE (log:ImportLog {
+        id: $import_id,
+        timestamp: datetime($timestamp),
+        total_questions: $total_questions,
+        total_tags: $total_tags,
+        total_pages: $total_pages,
+        tags_list: $tags_list
+    })
+    """
+    
+    driver.query(query, {
+        "import_id": import_id,
+        "timestamp": timestamp,
+        "total_questions": total_questions,
+        "total_tags": len(tags_list),
+        "total_pages": total_pages,
+        "tags_list": tags_list
+    })
+    
+    return import_id
+
+def get_database_summary(driver):
+    """Get summary statistics from the database."""
+    summary_query = """
+    MATCH (q:Question)
+    WITH count(q) as total_questions
+    MATCH (t:Tag)
+    WITH total_questions, count(t) as total_tags
+    MATCH (a:Answer)
+    WITH total_questions, total_tags, count(a) as total_answers
+    MATCH (u:User)
+    WITH total_questions, total_tags, total_answers, count(u) as total_users
+    MATCH (log:ImportLog)
+    WITH total_questions, total_tags, total_answers, total_users, count(log) as total_imports
+    MATCH (log:ImportLog)
+    WITH total_questions, total_tags, total_answers, total_users, total_imports, 
+         max(log.timestamp) as last_import
+    RETURN total_questions, total_tags, total_answers, total_users, total_imports, last_import
+    """
+    
+    result = driver.query(summary_query)
+    if result and len(result) > 0:
+        return result[0]
+    return {
+        "total_questions": 0,
+        "total_tags": 0, 
+        "total_answers": 0,
+        "total_users": 0,
+        "total_imports": 0,
+        "last_import": None
+    }
+
+def get_import_history(driver, limit: int = 20):
+    """Get recent import history from ImportLog nodes."""
+    history_query = """
+    MATCH (log:ImportLog)
+    RETURN log.id as id, log.timestamp as timestamp, log.total_questions as questions,
+           log.total_tags as tags, log.total_pages as pages, log.tags_list as tags_list
+    ORDER BY log.timestamp DESC
+    LIMIT $limit
+    """
+    
+    result = driver.query(history_query, {"limit": limit})
+    return result if result else []

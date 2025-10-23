@@ -4,7 +4,7 @@ from langchain_neo4j import Neo4jGraph
 import streamlit as st
 from streamlit.logger import get_logger
 from langchain_ollama import OllamaEmbeddings
-from utils.utils import create_constraints, create_vector_index, import_query
+from utils.utils import create_constraints, create_vector_index, import_query, record_import_session
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -141,7 +141,7 @@ def render_page():
             completed_tasks = 0
             total_imported_count = 0
             
-            with ThreadPoolExecutor(max_workers=4) as executor:
+            with ThreadPoolExecutor(max_workers=8) as executor:
                 futures = [
                     executor.submit(load_so_data, tag, start_page + i)
                     for tag in tags_to_import
@@ -165,6 +165,19 @@ def render_page():
                         error_placeholder.error(f"({progress:.2f}%) ❌ Failed: Page {result['page']} for tag '{result['tag']}'. Reason: {result['error']}")
 
             st.success(f"Import complete! Successfully imported {total_imported_count} questions.", icon="✅")
+            
+            # Record the import session in Neo4j
+            try:
+                record_import_session(
+                    neo4j_graph, 
+                    total_imported_count, 
+                    tags_to_import, 
+                    num_pages
+                )
+                st.info("📊 Import session recorded in dashboard")
+            except Exception as e:
+                st.warning(f"Could not record import session: {e}")
+            
             st.caption("Go to http://localhost:7473/ to interact with the database")
 
 render_page()
