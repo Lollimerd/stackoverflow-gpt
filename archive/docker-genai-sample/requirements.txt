@@ -1,7 +1,0 @@
-streamlit
-langchain
-neo4j
-sentence_transformers
-torch
-PyPDF2
-openai
