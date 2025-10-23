@@ -125,20 +125,6 @@ services:
     # If you enable this, you must include the API key in your client's request headers.
     # environment:
     #   - QDRANT__SERVICE__API_KEY=your_super_secret_api_key
-    
-  # weaviate:
-  #   image: cr.weaviate.io/semitechnologies/weaviate:1.32.9 # Use a recent stable version
-  #   container_name: weaviateDB
-  #   ports:
-  #     - 8001:8080 # RESTful API
-  #     - 50051:50051 # gRPC
-  #   restart: on-failure:0
-  #   environment:
-  #     QUERY_DEFAULTS_LIMIT: 25
-  #     AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
-  #     PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
-  #     DEFAULT_VECTORIZER_MODULE: 'none' # Use 'none' if providing your own vectors
-  #     CLUSTER_HOSTNAME: 'node1'
 
 networks:
   app-network:
