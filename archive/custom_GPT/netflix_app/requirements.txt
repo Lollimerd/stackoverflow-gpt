@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+langchain
+langchain_community
+langchain_core
+langchain_neo4j
+langgraph
+python-dotenv
+ollama

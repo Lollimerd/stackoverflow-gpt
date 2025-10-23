@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Modern Gen AI Stack Infographic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles to complement Tailwind */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a0a;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .card {
+            background-color: rgba(23, 23, 23, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 30px rgba(0, 255, 255, 0.1);
+        }
+        .details-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.7s ease-out, padding 0.7s ease-out;
+            padding: 0 1.5rem;
+        }
+        .details-panel.open {
+            max-height: 1000px; /* Large enough to fit content */
+            padding: 1.5rem 1.5rem;
+        }
+        .cypher-code {
+            background-color: #1a1a1a;
+            border-left: 4px solid #00A8E8;
+            color: #f1f1f1;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .connector {
+            position: absolute;
+            border-left: 2px dashed rgba(0, 255, 255, 0.4);
+            height: 4rem;
+            left: 50%;
+            transform: translateX(-1px);
+        }
+        .icon-glow {
+            filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.7));
+        }
+        .btn-glow {
+            transition: all 0.3s ease;
+            box-shadow: 0 0 5px rgba(0, 255, 255, 0.5), 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+        .btn-glow:hover {
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8), 0 0 25px rgba(0, 255, 255, 0.6);
+            transform: scale(1.05);
+        }
+        /* Background Animation */
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .animated-gradient-bg {
+            background: linear-gradient(-45deg, #0a0a0a, #0d253f, #0a0a0a, #2f0d3f);
+            background-size: 400% 400%;
+            animation: gradient-animation 15s ease infinite;
+        }
+    </style>
+</head>
+<body class="animated-gradient-bg">
+
+    <div class="container mx-auto px-4 py-12">
+
+        <!-- Header -->
+        <header class="text-center mb-16">
+            <h1 class="font-orbitron text-4xl md:text-6xl font-bold tracking-wider uppercase">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">GEN AI</span> STACK
+            </h1>
+            <p class="mt-4 text-lg text-slate-400 max-w-3xl mx-auto">An interactive guide to the modern, open-source stack for building powerful, context-aware AI applications.</p>
+        </header>
+
+        <!-- The Stack -->
+        <div class="space-y-16 relative">
+
+            <!-- Component 1: Docker -->
+            <div class="relative">
+                <article id="docker-card" class="card rounded-2xl p-6 md:p-8 text-center max-w-3xl mx-auto">
+                    <div class="flex justify-center mb-4">
+                        <!-- Docker SVG Icon -->
+                        <svg class="w-20 h-20 icon-glow" viewBox="0 0 256 209" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M252.895 89.1388C252.555 87.1353 251.535 85.3113 249.975 84.0068L249.955 83.9967L228.475 66.9902V66.9801L228.465 66.9701C226.975 65.7852 225.015 65.1788 223.025 65.2995H195.315V21.5303C195.315 9.63756 185.675 0 173.785 0H21.5251C9.63511 0 0 9.63756 0 21.5303V151.487C0 163.38 9.63511 173.017 21.5251 173.017H173.785C185.675 173.017 195.315 163.38 195.315 151.487V107.718H223.025C225.015 107.839 226.975 107.232 228.465 106.047L228.475 106.037V106.027L249.955 89.0205L249.975 89.0104C251.535 87.7059 252.555 85.8819 252.895 83.8784C253.075 82.8162 253.075 81.7138 252.895 80.6516C252.895 80.6516 255.995 81.1631 255.995 81.1631C255.995 83.3975 254.915 85.5011 253.115 86.876L252.895 89.1388Z" fill="#00A8E8"/><path d="M37.8486 86.4277H64.9386V113.518H37.8486V86.4277Z" fill="#00A8E8"/><path d="M75.2485 86.4277H102.339V113.518H75.2485V86.4277Z" fill="#00A8E8"/><path d="M112.649 86.4277H139.739V113.518H112.649V86.4277Z" fill="#00A8E8"/><path d="M37.8486 49.0401H64.9386V76.1301H37.8486V49.0401Z" fill="#00A8E8"/><path d="M75.2485 49.0401H102.339V76.1301H75.2485V49.0401Z" fill="#00A8E8"/><path d="M112.649 49.0401H139.739V76.1301H112.649V49.0401Z" fill="#00A8E8"/><path d="M150.049 49.0401H177.139V76.1301H150.049V49.0401Z" fill="#00A8E8"/><path d="M150.049 86.4277H177.139V113.518H150.049V86.4277Z" fill="#00A8E8"/><path d="M37.8486 123.815H64.9386V150.905H37.8486V123.815Z" fill="#00A8E8"/></svg>
+                    </div>
+                    <h2 class="text-3xl font-bold font-orbitron">1. DOCKER 🐳</h2>
+                    <p class="mt-2 text-slate-400">The Environment Foundation</p>
+                    <button data-target="docker-details" class="toggle-btn mt-6 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-6 rounded-full btn-glow">Learn More</button>
+                    <div id="docker-details" class="details-panel text-left">
+                        <h3 class="font-bold text-xl text-cyan-300 mt-4">What is it?</h3>
+                        <p class="mt-2 text-slate-300">Docker is a platform that packages applications and their dependencies into isolated, lightweight units called <strong class="text-cyan-400">containers</strong>. Think of it as a standardized box that holds everything your app needs to run, ensuring it works the same way everywhere.</p>
+                        <h3 class="font-bold text-xl text-cyan-300 mt-4">Why is it essential for this stack?</h3>
+                        <ul class="list-disc list-inside mt-2 space-y-2 text-slate-300">
+                            <li><strong class="text-white">Consistency:</strong> Guarantees that Neo4j, Ollama, and your Python application run in identical environments, from your laptop to the cloud. No more "it works on my machine" headaches!</li>
+                            <li><strong class="text-white">Isolation:</strong> Each component runs in its own container, preventing dependency conflicts. Neo4j's Java version won't clash with your Python libraries.</li>
+                            <li><strong class="text-white">Portability:</strong> The entire stack can be defined in a `docker-compose.yml` file and spun up with a single command (`docker-compose up`), making setup and deployment incredibly simple.</li>
+                        </ul>
+                    </div>
+                </article>
+                <div class="connector mt-[-1px]"></div>
+            </div>
+
+            <!-- Component 2: Neo4j -->
+            <div class="relative">
+                <article id="neo4j-card" class="card rounded-2xl p-6 md:p-8 text-center max-w-3xl mx-auto">
+                    <div class="flex justify-center mb-4">
+                        <!-- Neo4j SVG Icon -->
+                        <svg class="w-20 h-20 icon-glow" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="128" cy="128" r="120" fill="#00A8E8"/><circle cx="128" cy="128" r="100" fill="#0a0a0a"/><path d="M128 48C83.8169 48 48 83.8169 48 128C48 172.183 83.8169 208 128 208C172.183 208 208 172.183 208 128" stroke="white" stroke-width="16" stroke-linecap="round"/><circle cx="128" cy="48" r="16" fill="white"/><circle cx="48" cy="128" r="16" fill="white"/><circle cx="128" cy="208" r="16" fill="white"/><circle cx="208" cy="128" r="16" fill="white"/><circle cx="80" cy="80" r="16" fill="white"/><path d="M128 48L80 80" stroke="white" stroke-width="16" stroke-linecap="round"/></svg>
+                    </div>
+                    <h2 class="text-3xl font-bold font-orbitron">2. NEO4J 🕸️</h2>
+                    <p class="mt-2 text-slate-400">The Knowledge Backbone</p>
+                    <button data-target="neo4j-details" class="toggle-btn mt-6 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-6 rounded-full btn-glow">Learn More</button>
+                    <div id="neo4j-details" class="details-panel text-left">
+                        <h3 class="font-bold text-xl text-cyan-300 mt-4">What is it?</h3>
+                        <p class="mt-2 text-slate-300">Neo4j is a <strong class="text-cyan-400">native graph database</strong>. Instead of storing data in tables (like SQL), it stores data as nodes (entities) and relationships (connections). This is the natural way to represent complex, interconnected data like social networks, supply chains, and, most importantly, knowledge.</p>
+                        <h3 class="font-bold text-xl text-cyan-300 mt-4">Why is it the perfect database for Gen AI?</h3>
+                        <ul class="list-disc list-inside mt-2 space-y-2 text-slate-300">
+                            <li><strong class="text-white">Context is King:</strong> Relationships are first-class citizens. This allows the AI to understand not just *what* things are, but *how* they're related, providing deep, meaningful context.</li>
+                            <li><strong class="text-white">GraphRAG Powerhouse:</strong> It's the core of GraphRAG. We can traverse the graph to find multi-hop connections and complex patterns that are impossible to find in traditional vector searches.</li>
+                            <li><strong class="text-white">Intuitive Querying:</strong> Cypher, its query language, is designed to be readable and expressive for graph patterns.</li>
+                        </ul>
+                        <h3 class="font-bold text-xl text-cyan-300 mt-4">Example Cypher Query:</h3>
+                        <pre class="cypher-code p-4 rounded-lg mt-2 text-sm overflow-x-auto"><code><span style="color: #d857cf;">MATCH</span> (p:Person {name: "Alice"})-[:KNOWS]->(friend)-[:WORKS_AT]->(c:Company)
+<span style="color: #d857cf;">RETURN</span> p.name, friend.name, c.name</code></pre>
+                        <p class="mt-2 text-slate-400 text-sm">This query finds the companies where Alice's friends work.</p>
+                    </div>
+                </article>
+                <div class="connector mt-[-1px]"></div>
+            </div>
+
+            <!-- Component 3: Ollama -->
+            <div class="relative">
+                <article id="ollama-card" class="card rounded-2xl p-6 md:p-8 text-center max-w-3xl mx-auto">
+                    <div class="flex justify-center mb-4">
+                        <!-- Ollama SVG Icon (llama) -->
+                        <svg class="w-20 h-20 icon-glow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 19.2941C16.8824 19.2941 17.5294 18.2353 17.5294 17.5294C17.5294 16.8235 16.8824 16 16 16C15.1176 16 14.4706 16.8235 14.4706 17.5294C14.4706 18.2353 15.1176 19.2941 16 19.2941Z" stroke="#00A8E8" stroke-width="1.5"/><path d="M12.2353 10.1176C12.2353 10.1176 13.7059 12.4706 13.7059 14.8235C13.7059 16.1176 13.7059 17.7647 12.2353 17.7647C10.7647 17.7647 9.29412 16.1176 9.29412 14.8235C9.29412 12.4706 10.7647 10.1176 10.7647 10.1176" stroke="#00A8E8" stroke-width="1.5"/><path d="M10.7647 10.1176C10.7647 10.1176 12.2353 7.76471 12.2353 5.41176C12.2353 4.11765 12.2353 2.47059 10.7647 2.47059C9.29412 2.47059 7.82353 4.11765 7.82353 5.41176C7.82353 7.76471 9.29412 10.1176 9.29412 10.1176" stroke="#00A8E8" stroke-width="1.5"/><path d="M19.2941 14.1176V10.8235C19.2941 8.47059 17.5294 6.35294 15.2941 5.41176L12.2353 4.70588M4.70588 14.1176V10.8235C4.70588 8.47059 6.47059 6.35294 8.70588 5.41176L11.7647 4.70588" stroke="#00A8E8" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    </div>
+                    <h2 class="text-3xl font-bold font-orbitron">3. OLLAMA 🦙</h2>
+                    <p class="mt-2 text-slate-400">The Local LLM Engine</p>
+                    <button data-target="ollama-details" class="toggle-btn mt-6 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-6 rounded-full btn-glow">Learn More</button>
+                    <div id="ollama-details" class="details-panel text-left">
+                        <h3 class="font-bold text-xl text-cyan-300 mt-4">What is it?</h3>
+                        <p class="mt-2 text-slate-300">Ollama is a powerful yet simple tool that lets you download and run state-of-the-art open-source Large Language Models (LLMs) like Llama 3, Mistral, and Phi-3, right on your own machine. It serves these models via a local API.</p>
+                        <h3 class="font-bold text-xl text-cyan-300 mt-4">Why run LLMs locally?</h3>
+                        <ul class="list-disc list-inside mt-2 space-y-2 text-slate-300">
+                            <li><strong class="text-white">Privacy & Security:</strong> Your data never leaves your system. This is critical for sensitive or proprietary information.</li>
+                            <li><strong class="text-white">Cost-Effective:</strong> No API bills. Run as many inferences as your hardware can handle for free.</li>
+                            <li><strong class="text-white">Customization & Control:</strong> Easily swap out models, fine-tune them on your own data, and operate completely offline.</li>
+                            <li><strong class="text-white">Simplicity:</strong> A single command like `ollama run llama3` is all it takes to get a powerful LLM running.</li>
+                        </ul>
+                    </div>
+                </article>
+                <div class="connector mt-[-1px]"></div>
+            </div>
+
+            <!-- Component 4: LangChain -->
+            <div class="relative">
+                <article id="langchain-card" class="card rounded-2xl p-6 md:p-8 text-center max-w-3xl mx-auto">
+                    <div class="flex justify-center mb-4">
+                        <!-- LangChain SVG Icon -->
+                        <svg class="w-20 h-20 icon-glow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9.00012 12.0001L5.25012 15.7501L1.50012 12.0001L5.25012 8.25012L9.00012 12.0001Z" stroke="#9333ea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.0001 1.50012L11.2501 5.25012L15.0001 9.00012L18.7501 5.25012L15.0001 1.50012Z" stroke="#00A8E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M22.5001 15.0001L18.7501 18.7501L15.0001 22.5001L11.2501 18.7501L15.0001 15.0001" stroke="#9333ea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12L11.25 14.25" stroke="#e2e8f0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.25 5.25L9 7.5" stroke="#e2e8f0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 9L12.75 11.25" stroke="#e2e8f0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <h2 class="text-3xl font-bold font-orbitron">4. LANGCHAIN 🦜🔗</h2>
+                    <p class="mt-2 text-slate-400">The AI Application Orchestrator</p>
+                    <button data-target="langchain-details" class="toggle-btn mt-6 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-6 rounded-full btn-glow">Learn More</button>
+                    <div id="langchain-details" class="details-panel text-left">
+                        <h3 class="font-bold text-xl text-cyan-300 mt-4">What is it?</h3>
+                        <p class="mt-2 text-slate-300">LangChain is a framework that simplifies the development of complex AI applications. It acts as the "glue" or the "central nervous system," connecting all the other components together into a coherent workflow.</p>
+                        <h3 class="font-bold text-xl text-cyan-300 mt-4">How does it orchestrate the stack?</h3>
+                        <p class="text-slate-300 mt-2">When a user asks a question, LangChain manages the entire process:</p>
+                        <ol class="list-decimal list-inside mt-2 space-y-2 text-slate-300">
+                            <li><strong class="text-white">Query Understanding:</strong> It takes the user's natural language query.</li>
+                            <li><strong class="text-white">Graph Retrieval:</strong> It transforms the query into a Cypher query and runs it against the Neo4j database to fetch relevant, structured context (the GraphRAG step).</li>
+                            <li><strong class="text-white">Prompt Engineering:</strong> It intelligently combines the original query with the retrieved graph context into a detailed prompt.</li>
+                            <li><strong class="text-white">LLM Call:</strong> It sends this rich prompt to the Ollama-served LLM for processing.</li>
+                            <li><strong class="text-white">Response Generation:</strong> It receives the answer from the LLM and formats it for the user.</li>
+                        </ol>
+                    </div>
+                </article>
+            </div>
+        </div>
+
+        <!-- RAG vs GraphRAG -->
+        <section class="mt-24">
+            <header class="text-center mb-12">
+                <h2 class="font-orbitron text-3xl md:text-4xl font-bold tracking-wider uppercase">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-cyan-400">RAG</span> vs <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">GraphRAG</span>
+                </h2>
+                <p class="mt-4 text-lg text-slate-400 max-w-3xl mx-auto">The evolution of context retrieval.</p>
+            </header>
+            <div class="grid md:grid-cols-2 gap-8 items-start">
+                <!-- Standard RAG -->
+                <div class="card rounded-2xl p-6">
+                    <h3 class="text-2xl font-bold font-orbitron text-center">Standard RAG 📄</h3>
+                    <p class="text-center text-slate-400 mb-4">Retrieval-Augmented Generation</p>
+                    <p class="text-slate-300">Searches a database of text "chunks" (often using vector similarity) to find pieces of text that are relevant to the user's query. It's like finding relevant pages in a book.</p>
+                    <div class="mt-4 p-4 bg-black/30 rounded-lg">
+                        <p class="font-mono text-sm">
+                            <span class="text-cyan-400">User Query:</span> "What did project Titan achieve?"<br><br>
+                            <span class="text-purple-400">➡️ Vector Search</span><br><br>
+                            <span class="text-cyan-400">Retrieved Context:</span> "Chunk 7: Project Titan was a success..."<br>
+                            <span class="text-cyan-400">Retrieved Context:</span> "Chunk 89: The final report for Titan mentioned..."
+                        </p>
+                    </div>
+                    <p class="mt-4 text-slate-300"><strong class="text-white">Limitation:</strong> The context is unstructured and lacks explicit relationships. The LLM has to infer connections itself.</p>
+                </div>
+                <!-- GraphRAG -->
+                <div class="card rounded-2xl p-6 border-2 border-cyan-400">
+                    <h3 class="text-2xl font-bold font-orbitron text-center">GraphRAG 🕸️</h3>
+                    <p class="text-center text-cyan-300 mb-4">The Next Level</p>
+                    <p class="text-slate-300">Traverses a knowledge graph to retrieve a subgraph of explicitly connected entities and relationships. It's like getting a mind map of the answer.</p>
+                    <div class="mt-4 p-4 bg-black/30 rounded-lg">
+                         <p class="font-mono text-sm">
+                            <span class="text-cyan-400">User Query:</span> "What did project Titan achieve?"<br><br>
+                            <span class="text-purple-400">➡️ Graph Traversal (Cypher)</span><br><br>
+                            <span class="text-cyan-400">Retrieved Context:</span><br>
+                            (Project: Titan) -[:ACHIEVED]-> (Milestone: M1)<br>
+                            (Project: Titan) -[:LED_BY]-> (Person: Dr. Eva Rostova)<br>
+                            (Milestone: M1) -[:GENERATED]-> (Report: R42)
+                        </p>
+                    </div>
+                    <p class="mt-4 text-slate-300"><strong class="text-white">Advantage:</strong> The context is structured, precise, and rich with relationships, leading to more accurate, explainable, and insightful answers.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- About the Expert -->
+        <footer class="text-center mt-24 pt-8 border-t border-white/10">
+            <p class="font-orbitron text-xl font-bold">🧠 // GEN AI EXPERT</p>
+            <p class="text-slate-400 mt-2 max-w-2xl mx-auto">
+                As an AI expert in this stack, I leverage Cypher for deep graph queries, orchestrate workflows with LangChain, and utilize local LLMs via Ollama, all within stable Docker environments. My purpose is to build and explain these powerful, data-driven AI systems.
+            </p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get all toggle buttons
+            const toggleButtons = document.querySelectorAll('.toggle-btn');
+
+            toggleButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Find the target panel using the data-target attribute
+                    const targetId = button.dataset.target;
+                    const targetPanel = document.getElementById(targetId);
+
+                    if (targetPanel) {
+                        // Close all other open panels
+                        document.querySelectorAll('.details-panel.open').forEach(openPanel => {
+                            if (openPanel.id !== targetId) {
+                                openPanel.classList.remove('open');
+                                // Also reset the button text for other panels
+                                const otherButton = document.querySelector(`[data-target="${openPanel.id}"]`);
+                                if (otherButton) {
+                                    otherButton.textContent = 'Learn More';
+                                }
+                            }
+                        });
+
+                        // Toggle the clicked panel
+                        targetPanel.classList.toggle('open');
+                        
+                        // Change button text based on state
+                        if (targetPanel.classList.contains('open')) {
+                            button.textContent = 'Show Less';
+                        } else {
+                            button.textContent = 'Learn More';
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
