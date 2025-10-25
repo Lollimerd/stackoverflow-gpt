@@ -52,7 +52,6 @@ compressor = CrossEncoderReranker(
         model=RERANKER_MODEL,
         top_n=20  # This will return the top n most relevant documents.
     )
-
 graph = Neo4jGraph(
     url=NEO4J_URL,
     username=NEO4J_USERNAME,
