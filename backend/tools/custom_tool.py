@@ -1,5 +1,6 @@
 from setup.init import graph, EMBEDDINGS, create_vector_stores, ANSWER_LLM, compressor
 from langchain.retrievers import EnsembleRetriever, ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import CrossEncoderReranker
 from typing import List, Dict
 from langchain_core.documents import Document
 from prompts.st_overflow import analyst_prompt
@@ -127,6 +128,13 @@ tagstore = stores['tagstore']
 userstore = stores['userstore']
 questionstore = stores['questionstore']
 answerstore = stores['answerstore']
+
+# create compressor
+compressor = CrossEncoderReranker(
+        model=RERANKER_MODEL,
+        top_n=20  # This will return the top n most relevant documents.
+    )
+
 # ===========================================================================================================================================================
 # Setting Up Retrievers from vectorstores for EnsembleRetriever 
 # ===========================================================================================================================================================

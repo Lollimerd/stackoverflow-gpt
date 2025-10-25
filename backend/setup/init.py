@@ -9,7 +9,6 @@ from typing_extensions import List, TypedDict
 from typing import Dict, Optional
 from langchain_core.documents import Document
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
-from langchain.retrievers.document_compressors import CrossEncoderReranker
 
 # ===========================================================================================================================================================
 # Step 1: Load Configuration: Docker, Neo4j, Ollama, Langchain
@@ -48,10 +47,6 @@ RERANKER_MODEL = HuggingFaceCrossEncoder(
     model_name='BAAI/bge-reranker-base',
     )  # Use 'cuda' if you have a GPU available.
 
-compressor = CrossEncoderReranker(
-        model=RERANKER_MODEL,
-        top_n=20  # This will return the top n most relevant documents.
-    )
 graph = Neo4jGraph(
     url=NEO4J_URL,
     username=NEO4J_USERNAME,
