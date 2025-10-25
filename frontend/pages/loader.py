@@ -100,12 +100,12 @@ def insert_so_data(data: dict) -> None:
     for q in data["items"]:
         question_text = q["title"] + "\n" + q["body_markdown"]
         q["embedding"] = embeddings.embed_query(question_text)
-        time.sleep(0.1)  # to avoid hitting rate limits
+        time.sleep(0.2)  # to avoid hitting rate limits
         for a in q["answers"]:
             a["embedding"] = embeddings.embed_query(
                 question_text + "\n" + a["body_markdown"]
             )
-            time.sleep(0.1)  # to avoid hitting rate limits
+            time.sleep(0.2)  # to avoid hitting rate limits
 
     neo4j_graph.query(import_query, {"data": data["items"]})
 
@@ -155,7 +155,7 @@ def render_page():
                 ]
 
                 for future in as_completed(futures):
-                    time.sleep(0.1)
+                    time.sleep(0.2)
                     completed_tasks += 1
                     result = future.result() # This will not raise an error now
                     
