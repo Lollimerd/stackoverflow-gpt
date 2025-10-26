@@ -2,13 +2,17 @@
 import json, requests, datetime, uuid, httpx
 from httpx_sse import connect_sse
 import streamlit as st
+from st_pages import add_page_title, get_nav_from_toml
 import streamlit.components.v1 as components
 from streamlit_timeline import timeline 
 from utils.utils import render_message_with_mermaid, display_container_name, get_system_config
 
 # --- Page Configuration ---
-st.set_page_config(page_title="Custom GPT", page_icon="🧠", layout="wide", initial_sidebar_state="expanded")
-
+st.set_page_config(page_title="Custom GPT", page_icon="🧠", layout="wide", initial_sidebar_state="expanded", menu_items={
+    'Get Help': 'https://www.extremelycoolapp.com/help',
+    'Report a bug': "https://www.extremelycoolapp.com/bug",
+    'About': "# This is a header. This is an *extremely* cool app!"})
+ 
 # --- API Configuration ---
 FASTAPI_URL = "http://0.0.0.0:8000/stream-ask"
 

@@ -1,4 +1,4 @@
-from setup.init import graph, EMBEDDINGS, create_vector_stores, ANSWER_LLM, compressor, RERANKER_MODEL
+from setup.init import graph, EMBEDDINGS, create_vector_stores, ANSWER_LLM, RERANKER_MODEL
 from langchain.retrievers import EnsembleRetriever, ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import CrossEncoderReranker
 from typing import List, Dict
