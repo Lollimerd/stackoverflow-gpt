@@ -2,7 +2,7 @@
 # Script to run FastAPI backend and Streamlit frontend simultaneously
 
 # Define the commands
-FASTAPI_CMD="uvicorn backend:app --host 0.0.0.0 --port 8000 --reload"  # Replace with your FastAPI file path
+FASTAPI_CMD="uvicorn backend.app:app --host 0.0.0.0 --port 8000 --reload"  # Replace with your FastAPI file path
 STREAMLIT_CMD="streamlit run web.py --server.address=0.0.0.0"  # Replace with your Streamlit file path
 
 # Function to kill both processes when script exits
@@ -15,7 +15,7 @@ cleanup() {
 # Trap Ctrl+C and other termination signals
 trap cleanup SIGINT SIGTERM
 
-cd backend
+cd backend/app
 # Start FastAPI backend
 echo "Starting FastAPI backend..."
 eval $FASTAPI_CMD &

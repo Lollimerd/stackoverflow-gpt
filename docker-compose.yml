@@ -130,6 +130,17 @@ services:
     # environment:
     #   - QDRANT__SERVICE__API_KEY=your_super_secret_api_key
 
+  backend-server:
+    build:
+      context: ./backend 
+    ports:
+      - 8000:8000
+    networks:
+      - app-network
+    depends_on:
+      - ollama
+      - graphDB
+
 networks:
   app-network:
     driver: bridge
