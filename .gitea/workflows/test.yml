@@ -1,0 +1,14 @@
+name: Gitea Actions Demo
+
+on: [push]
+
+jobs:
+  explore-gitea-actions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: List files in the repository
+        run: |
+          ls -F ${{ gitea.workspace }}
