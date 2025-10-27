@@ -132,7 +132,7 @@ answerstore = stores['answerstore']
 # create compressor
 compressor = CrossEncoderReranker(
         model=RERANKER_MODEL,
-        top_n=20  # This will return the top n most relevant documents.
+        top_n=10  # This will return the top n most relevant documents.
     )
 
 # ===========================================================================================================================================================
