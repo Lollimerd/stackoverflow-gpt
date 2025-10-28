@@ -141,7 +141,7 @@ def render_page():
                     'pages': 'Pages',
                     'tags_list': 'Tag List'
                 }),
-                use_container_width=True,
+                width='stretch',
                 hide_index=True
             )
             
@@ -158,7 +158,7 @@ def render_page():
                     labels={'formatted_time': 'Import Date', 'questions': 'Questions Imported'}
                 )
                 fig.update_layout(xaxis_tickangle=-45)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
                 
                 # Tags distribution
                 if len(df) > 0:
@@ -177,7 +177,7 @@ def render_page():
                             title="Most Imported Tags (Top 10)",
                             labels={'x': 'Import Count', 'y': 'Tag'}
                         )
-                        st.plotly_chart(fig2, use_container_width=True)
+                        st.plotly_chart(fig2, width='stretch')
         else:
             st.info("No import history found. Start importing data to see statistics here.")
             
@@ -189,11 +189,11 @@ def render_page():
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("🔄 Refresh Dashboard", use_container_width=True):
+        if st.button("🔄 Refresh Dashboard", width='stretch'):
             st.rerun()
     
     with col2:
-        if st.button("📥 Go to Loader", use_container_width=True):
+        if st.button("📥 Go to Loader", width='stretch'):
             st.switch_page("pages/loader.py")
 
 render_page()
