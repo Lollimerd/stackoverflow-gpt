@@ -54,7 +54,7 @@ with st.sidebar:
 
     # --- Chat Management UI ---
     st.sidebar.subheader("Chats", help="navigate your chats here")
-    if st.sidebar.button("➕ New Chat", width='stretch'):
+    if st.sidebar.button("➕ New Chat", use_container_width=True):
         new_chat_id = str(uuid.uuid4())
         st.session_state.chats[new_chat_id] = {
             "title": f"Chat {len(st.session_state.chats) + 1}",
@@ -79,7 +79,7 @@ with st.sidebar:
         
         with col1:
             # Button to delete the chat
-            if st.button("🗑️", key=f"delete_chat_{chat_id}", width='stretch'):
+            if st.button("🗑️", key=f"delete_chat_{chat_id}", use_container_width=True):
                 # Remove the chat from the dictionary
                 del st.session_state.chats[chat_id]
                 
@@ -95,14 +95,14 @@ with st.sidebar:
             if st.button(
                 chat_data['title'], 
                 key=f"chat_button_{chat_id}", 
-                width='stretch',
+                use_container_width=True,
                 disabled=(chat_id == st.session_state.active_chat_id)
             ):
                 st.session_state.active_chat_id = chat_id
                 st.rerun()
 
     # --- Clear history for the ACTIVE chat ---
-    if st.button("Clear Active Chat History", width='stretch'):
+    if st.button("Clear Active Chat History", use_container_width=True):
         active_chat = get_active_chat()
         active_chat["thoughts"] = []
         active_chat["messages"] = []
