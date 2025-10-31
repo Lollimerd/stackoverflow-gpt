@@ -22,5 +22,6 @@ dependencies = [
     "streamlit-option-menu>=0.4.0",
     "streamlit-timeline>=0.0.2",
     "tqdm>=4.67.1",
+    "uuid>=1.30",
     "uvicorn>=0.37.0",
 ]
