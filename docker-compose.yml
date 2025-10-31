@@ -141,7 +141,7 @@ services:
       - ollama
       - graphDB
   
-  frontend-server:
+  frontend:
     build:
       context: ./frontend 
     ports:
