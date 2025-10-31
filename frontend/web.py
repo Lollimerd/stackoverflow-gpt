@@ -8,7 +8,8 @@ from streamlit_timeline import timeline
 from utils.utils import render_message_with_mermaid, display_container_name, get_system_config
 
 # --- Page Configuration ---
-st.set_page_config(page_title="Custom GPT", page_icon="🧠", layout="wide", initial_sidebar_state="expanded", menu_items={
+st.set_page_config(page_title="Custom GPT", page_icon="🧠", layout="wide", initial_sidebar_state="expanded", 
+    menu_items={
     'Get Help': 'https://www.extremelycoolapp.com/help',
     'Report a bug': "https://www.extremelycoolapp.com/bug",
     'About': "# This is a header. This is an *extremely* cool app!"})

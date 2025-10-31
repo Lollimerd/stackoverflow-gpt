@@ -16,12 +16,6 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
 
-# --- START FIX ---
-# Set the Hugging Face home/cache directory.
-# This prevents writing to the non-privileged user's non-existent home dir.
-ENV HF_HOME /cache
-# --- END FIX ---
-
 WORKDIR /app
 
 # Create a non-privileged user that the app will run under.
@@ -35,12 +29,6 @@ RUN adduser \
     --no-create-home \
     --uid "${UID}" \
     appuser
-
-# --- START FIX ---
-# Create the cache directory and set the correct owner.
-# This must be owned by 'appuser' so it can write models at runtime.
-RUN mkdir /cache && chown -R appuser:appuser /cache
-# --- END FIX ---
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
@@ -57,9 +45,7 @@ USER appuser
 COPY . .
 
 # Expose the port that the application listens on.
-EXPOSE 8000
+EXPOSE 8501
 
 # Run the application.
-# Note: Ensure 'app.backend' is the correct module path.
-# Based on your files, your app is in 'backend.py' which is 'backend:app'
-CMD uvicorn 'backend.app:app' --host=0.0.0.0 --port=8000
+CMD streamlit run web.py --server.address=0.0.0.0
