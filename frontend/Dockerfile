@@ -24,11 +24,13 @@ ARG UID=10001
 RUN adduser \
     --disabled-password \
     --gecos "" \
-    --home "/nonexistent" \
+    --home "/home/appuser" \
     --shell "/sbin/nologin" \
-    --no-create-home \
     --uid "${UID}" \
     appuser
+
+# Create cache directory for Streamlit and other dependencies
+RUN mkdir -p /home/appuser/.cache /home/appuser/.streamlit && chown -R appuser:appuser /home/appuser
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
