@@ -1,5 +1,5 @@
 # app.py
-import json, requests, datetime, uuid, httpx
+import json, requests, datetime, uuid, httpx, os
 from httpx_sse import connect_sse
 import streamlit as st
 from st_pages import add_page_title, get_nav_from_toml
@@ -15,7 +15,8 @@ st.set_page_config(page_title="Custom GPT", page_icon="🧠", layout="wide", ini
     'About': "# This is a header. This is an *extremely* cool app!"})
  
 # --- API Configuration ---
-FASTAPI_URL = "http://0.0.0.0:8000/stream-ask"
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+FASTAPI_URL = f"{BACKEND_URL}/stream-ask"
 
 # --- Initialize Session State for Multi-Chat ---
 if "chats" not in st.session_state:

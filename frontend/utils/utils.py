@@ -110,7 +110,10 @@ def render_message_with_mermaid(content):
             if part.strip():
                 st.markdown(part)
 
-CONFIG_URL = "http://0.0.0.0:8000/api/v1/config" # New API endpoint
+import os
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+CONFIG_URL = f"{BACKEND_URL}/api/v1/config" # New API endpoint
+
 # --- 🆕 Function to fetch and display container name ---
 def display_container_name():
     """Fetches and displays the Neo4j container name in the sidebar."""
