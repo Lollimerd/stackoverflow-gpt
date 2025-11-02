@@ -1,6 +1,6 @@
 from langchain_core.documents import Document
 from typing import List, Any
-import json, docker, re
+import json, docker, re, os
 
 def escape_lucene_chars(text: str) -> str:
     """
@@ -16,6 +16,12 @@ def find_container_by_port(port: int) -> str:
     """Inspects running Docker containers to find which one is using the specified port."""
     if not port:
         return "Invalid port"
+
+    # Check if running in Docker
+    if os.path.exists('/.dockerenv'):
+        return f"Connected (port {port})"
+    
+    # for non-containerized environments
     try:
         # Connect to the Docker daemon
         client = docker.from_env()
