@@ -160,14 +160,16 @@ def render_page():
                     
                     progress = (completed_tasks / tasks_to_complete) * 100
                     
-                    if result["status"] == "success":
-                        total_imported_count += result["count"]
-                        info_placeholder.info(f"({progress:.2f}%) ✅ Success: Imported page {result['page']} for tag '{result['tag']}' ({result['count']} items).")
-                    elif result["status"] == "empty":
-                         info_placeholder.info(f"({progress:.2f}%) 🟡 Skipped: No items on page {result['page']} for tag '{result['tag']}'.")
-                    elif result["status"] == "error":
-                        # Log the error to the UI without stopping
-                        error_placeholder.error(f"({progress:.2f}%) ❌ Failed: Page {result['page']} for tag '{result['tag']}'. Reason: {result['error']}")
+                    with info_placeholder:
+                        if result["status"] == "success":
+                            total_imported_count += result["count"]
+                            st.info(f"({progress:.2f}%) ✅ Success: Imported page {result['page']} for tag '{result['tag']}' ({result['count']} items).")
+                        elif result["status"] == "empty":
+                            st.info(f"({progress:.2f}%) 🟡 Skipped: No items on page {result['page']} for tag '{result['tag']}'.")
+                    with error_placeholder:
+                        if result["status"] == "error":
+                            # Log the error to the UI without stopping
+                            st.error(f"({progress:.2f}%) ❌ Failed: Page {result['page']} for tag '{result['tag']}'. Reason: {result['error']}")
 
             st.success(f"Import complete! Successfully imported {total_imported_count} questions.", icon="✅")
             
