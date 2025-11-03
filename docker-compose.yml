@@ -52,6 +52,7 @@ services:
       - NEO4J_server_memory_pagecache_size=2G # For large graphs, dedicate memory to page cache
       # --- Enable Java Vector API (SIMD) ---
       - NEO4J_server_jvm_additional=--add-modules=jdk.incubator.vector
+    restart: unless-stopped
     networks:
       - app-network
     depends_on:
@@ -96,6 +97,7 @@ services:
       - NEO4J_server_memory_pagecache_size=2G # For large graphs, dedicate memory to page cache
       # --- Enable Java Vector API (SIMD) ---
       - NEO4J_server_jvm_additional=--add-modules=jdk.incubator.vector
+    restart: unless-stopped
     networks:
       - app-network
     healthcheck:
@@ -148,6 +150,7 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
       - EMBEDDING_MODEL=${EMBEDDING_MODEL}
       - STACKEXCHANGE_API_KEY=${STACKEXCHANGE_API_KEY}
+    restart: unless-stopped
     networks:
       - app-network
     depends_on:
@@ -169,6 +172,7 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
       - EMBEDDING_MODEL=${EMBEDDING_MODEL}
       - STACKEXCHANGE_API_KEY=${STACKEXCHANGE_API_KEY}
+    restart: unless-stopped
     networks:
       - app-network
     depends_on:
