@@ -1,5 +1,5 @@
 import streamlit as st
-import re, hashlib, requests, uuid, json
+import re, hashlib, requests, uuid, json, os
 from streamlit_mermaid import st_mermaid
 from typing import List
 from datetime import datetime
@@ -110,8 +110,7 @@ def render_message_with_mermaid(content):
             if part.strip():
                 st.markdown(part)
 
-import os
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://0.0.0.0:8000")
 CONFIG_URL = f"{BACKEND_URL}/api/v1/config" # New API endpoint
 
 # --- 🆕 Function to fetch and display container name ---
