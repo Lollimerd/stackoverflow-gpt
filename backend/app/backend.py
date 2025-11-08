@@ -9,6 +9,10 @@ from urllib.parse import urlparse
 from utils.util import format_docs_with_metadata, find_container_by_port
 from setup.init import ANSWER_LLM, NEO4J_URL, NEO4J_USERNAME
 from tools.custom_tool import graph_rag_chain
+from langfuse import Langfuse, observe, get_client
+from langfuse.langchain import CallbackHandler
+
+langfuse_handler = CallbackHandler(public_key="pk-lf-d2a00827-b334-472c-9b89-b5007de246b5",)
 
 # ===========================================================================================================================================================
 # FastAPI Backend Server 
@@ -42,6 +46,7 @@ def get_configuration():
 
 # --- ✨ REFACTORED: Streaming Endpoint with Thinking Handler ---
 @app.post("/stream-ask")
+@observe()
 async def stream_ask_question(request: QueryRequest) -> StreamingResponse:
     """This endpoint now includes chat history for context-aware responses."""
     async def stream_generator() -> AsyncGenerator[str]:
@@ -52,7 +57,9 @@ async def stream_ask_question(request: QueryRequest) -> StreamingResponse:
         async for chunk in graph_rag_chain.astream({
             "question": request.question,
             "chat_history": request.chat_history
-        }):
+        },
+        config={"callbacks": [langfuse_handler]}
+        ):
             # Extract content and reasoning
             content_chunk = chunk.content
             reasoning_chunk = chunk.additional_kwargs.get("reasoning_content", "")
@@ -65,11 +72,11 @@ async def stream_ask_question(request: QueryRequest) -> StreamingResponse:
 
             # Format as an SSE data payload
             yield f"data: {json.dumps(event_data)}\n\n"
-
+            
     # The media type is now plain text to stream the raw content and tags.
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
 # uvicorn main:app --reload
 if __name__ == "__main__":
     # Run the app with Uvicorn, specifying host and port here
-    uvicorn.run(app, host="localhost", port=8000, log_level="debug")
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug")

@@ -7,7 +7,6 @@ from prompts.st_overflow import analyst_prompt
 from langchain_core.tools import Tool
 from langchain_core.runnables import RunnablePassthrough
 from utils.util import format_docs_with_metadata, escape_lucene_chars
-from langchain_core.messages import HumanMessage, AIMessage
 
 # ===========================================================================================================================================================
 # Crafting custom cypher retrieval queries
@@ -119,7 +118,7 @@ RETURN
   } AS metadata,
   score
 ORDER BY score DESC
-LIMIT 500
+LIMIT 100
 """
 
 # Create vector stores
