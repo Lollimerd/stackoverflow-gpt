@@ -6,13 +6,22 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from urllib.parse import urlparse
+from dotenv import load_dotenv
 from utils.util import format_docs_with_metadata, find_container_by_port
 from setup.init import ANSWER_LLM, NEO4J_URL, NEO4J_USERNAME
 from tools.custom_tool import graph_rag_chain
-from langfuse import Langfuse, observe, get_client
-from langfuse.langchain import CallbackHandler
+# from langfuse import Langfuse
+# from langfuse.langchain import CallbackHandler
 
-langfuse_handler = CallbackHandler(public_key="pk-lf-d2a00827-b334-472c-9b89-b5007de246b5",)
+# Load environment variables
+load_dotenv()
+
+# Initialize Langfuse handler with credentials from environment
+# langfuse_handler: CallbackHandler = Langfuse(
+#     public_key=os.environ.get("LANGFUSE_PUBLIC_KEY"),
+#     secret_key=os.environ.get("LANGFUSE_SECRET_KEY"),
+#     host=os.environ.get("LANGFUSE_HOST"),
+# )
 
 # ===========================================================================================================================================================
 # FastAPI Backend Server 
@@ -24,11 +33,25 @@ app = FastAPI(title="GraphRAG API", version="1.2.0")
 class QueryRequest(BaseModel):
     """configure question template for answer LLM"""
     question: str
-    chat_history: List[Dict[str, str]] = []  # Uncomment and use this field
+    chat_history: List[Dict[str, str]] = []
+    session_id: str = None  # Optional session ID for tracking
 
 @app.get('/')
 def index():
     return {"message": "Welcome to the GraphRAG API"}
+
+# @app.get("/health")
+# def health():
+#     """Check if the Langfuse connection is healthy."""
+#     if langfuse_handler is None:
+#         return {"status": "error", "message": "Langfuse handler not initialized"}
+    
+#     try:
+#         # Attempt to use a feature that requires a connection
+#         langfuse_handler.auth_check()
+#         return {"status": "ok", "message": "Langfuse connection is healthy"}
+#     except Exception as e:
+#         return {"status": "error", "message": f"Langfuse connection failed: {e}"}
 
 # --- Add config endpoint ---
 @app.get("/api/v1/config")
@@ -46,19 +69,35 @@ def get_configuration():
 
 # --- ✨ REFACTORED: Streaming Endpoint with Thinking Handler ---
 @app.post("/stream-ask")
-@observe()
 async def stream_ask_question(request: QueryRequest) -> StreamingResponse:
     """This endpoint now includes chat history for context-aware responses."""
     async def stream_generator() -> AsyncGenerator[str]:
         print(f"\n--- 💡 INCOMING QUESTION: '{request.question}' ---")
-        print(f"--- 📚 CHAT HISTORY: {len(request.chat_history)} messages ---")
+        if len(request.chat_history) == 0:
+            print(f"--- 📚 CHAT HISTORY: {len(request.chat_history)} messages ---")
+        else: # excluding current message
+            print(f"--- 📚 CHAT HISTORY: {len(request.chat_history)-1} messages ---")
+
+        # Configure Langfuse with session tracking and metadata
+        langfuse_config = {
+            # "callbacks": [langfuse_handler],
+            "metadata": {
+                "session_id": request.session_id,
+                "question_length": len(request.question),
+                "history_length": len(request.chat_history),
+            },
+            "tags": ["graphrag", "stackoverflow"]
+        }
+        
+        if request.session_id:
+            langfuse_config["run_name"] = f"query_{request.session_id}"
 
         # Pass chat history to the chain
         async for chunk in graph_rag_chain.astream({
             "question": request.question,
             "chat_history": request.chat_history
         },
-        config={"callbacks": [langfuse_handler]}
+        config=langfuse_config
         ):
             # Extract content and reasoning
             content_chunk = chunk.content
