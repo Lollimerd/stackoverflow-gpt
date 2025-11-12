@@ -4,7 +4,7 @@ from langchain.retrievers.document_compressors import CrossEncoderReranker
 from typing import List, Dict
 from langchain_core.documents import Document
 from prompts.st_overflow import analyst_prompt
-from langchain_core.tools import Tool
+# from langchain_core.tools import Tool
 from langchain_core.runnables import RunnablePassthrough
 from utils.util import format_docs_with_metadata, escape_lucene_chars
 

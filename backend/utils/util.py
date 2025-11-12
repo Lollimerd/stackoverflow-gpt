@@ -42,13 +42,13 @@ def find_container_by_port(port: int) -> str:
     except Exception as e:
         return f"An error occurred: {e}"
     
+    
 def _format_scalar(value: Any) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
     if value is None:
         return "null"
     return str(value)
-
 
 def _format_value_readable(value: Any, indent: int = 0, max_list_items: int = 10) -> str:
     pad = "  " * indent
