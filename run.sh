@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# init venv
+source /home/domer/Projects/stackoverflow-bot/.venv/bin/activate
+
 # Script to run FastAPI backend and Streamlit frontend simultaneously
 
 # Define the commands
