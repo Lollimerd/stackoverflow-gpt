@@ -1,11 +1,9 @@
-from setup.init import graph, EMBEDDINGS, create_vector_stores, ANSWER_LLM, RERANKER_MODEL
+from langgraph.graph import StateGraph, END
 from langchain.retrievers import EnsembleRetriever, ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import CrossEncoderReranker
-from typing import List, Dict
-from langchain_core.documents import Document
-from prompts.st_overflow import analyst_prompt
-from langchain_core.tools import Tool
 from langchain_core.runnables import RunnablePassthrough
+from setup.init import graph, EMBEDDINGS, create_vector_stores, ANSWER_LLM, RERANKER_MODEL, GraphState
+from prompts.st_overflow import analyst_prompt
 from utils.util import format_docs_with_metadata, escape_lucene_chars
 
 # ===========================================================================================================================================================
@@ -56,7 +54,7 @@ WHERE NOT bothHaveCommunity OR sameCommunity
 
 // Build rich context for each question
 // Core question data
-WITH DISTINCT question, score, sameCommunity,
+WITH DISTINCT question, score, sameCommunity, 
      coalesce(question.communityId, []) AS qComm,
      coalesce(node.communityId, []) AS nComm,
      {
@@ -134,22 +132,13 @@ compressor = CrossEncoderReranker(
         top_n=10  # This will return the top n most relevant documents.
     )
 
-# ===========================================================================================================================================================
-# Setting Up Retrievers from vectorstores for EnsembleRetriever 
-# ===========================================================================================================================================================
-
-# setting up retrievers from vectorstores with custom tailormade finetuning
-def retrieve_context(question: str) -> List[Document]:
+def retrieve_context(state):
     """
     Retrieve context from the ensemble retriever based on the user's question.
-
-    Returns:
-        List[Document]: A list of LangChain Document objects, where each document has:
-            - page_content (str): The main text content (e.g., question title and body).
-            - metadata (dict): Structured metadata including question details, user info, tags, answers, and similarity score.
     """
+    print("---RETRIEVING CONTEXT---")
+    question = state["question"]
     
-    # Define the common search arguments once
     common_search_kwargs = {
         'k': 10,
         'params': {
@@ -161,10 +150,8 @@ def retrieve_context(question: str) -> List[Document]:
         'lambda_mult': 0.5,
     }
 
-    # Use a list of vectorstores
     vectorstores = [tagstore, userstore, questionstore, answerstore]
 
-    # Create the retrievers using a list comprehension
     retrievers = [
         store.as_retriever(
             search_type="similarity_score_threshold",
@@ -173,29 +160,22 @@ def retrieve_context(question: str) -> List[Document]:
         for store in vectorstores
     ]
 
-    # init ensemble retriever
-    ensemble_retriever = EnsembleRetriever(
-        retrievers=retrievers,
-        # weights=[0.25, 0.25, 0.25, 0.25]  # Adjust weights based on importance
-    )
+    ensemble_retriever = EnsembleRetriever(retrievers=retrievers)
 
-    # print("---RETRIEVING CONTEXT---")
-    # return ensemble_retriever.invoke(question, k=3)
-
-    print("--- 🌐 RETRIEVING AND RERANKING DYNAMIC CONTEXT ---")
-    # Wrap your ensemble retriever with the compression retriever.
     compression_retriever = ContextualCompressionRetriever(
         base_compressor=compressor,
         base_retriever=ensemble_retriever
     )
     
     reranked_docs = compression_retriever.invoke(question)
-    return reranked_docs
+    return {"context": reranked_docs}
 
-def format_chat_history(chat_history: List[Dict[str, str]]) -> str:
+def format_chat_history(state):
     """Format chat history for inclusion in the prompt."""
+    print("---FORMATTING CHAT HISTORY---")
+    chat_history = state["chat_history"]
     if not chat_history:
-        return ""
+        return {"chat_history_formatted": ""}
     
     formatted_history = []
     for msg in chat_history:
@@ -204,18 +184,46 @@ def format_chat_history(chat_history: List[Dict[str, str]]) -> str:
         if role == "user":
             formatted_history.append(f"User: {content}")
         elif role == "assistant":
-            # Only include the main content, not the thought process
             formatted_history.append(f"Assistant: {content}")
     
-    return "\n".join(formatted_history)
+    return {"chat_history_formatted": "\n".join(formatted_history)}
 
+def generate_answer(state):
+    """
+    Generate answer using the LLM.
+    """
+    print("---GENERATING ANSWER---")
+    question = state["question"]
+    context = state["context"]
+    chat_history_formatted = state["chat_history"]
 
-# This chain is activated for GraphRAG.
-graph_rag_chain = (
-    RunnablePassthrough.assign(
-        context=lambda x: format_docs_with_metadata(retrieve_context(x["question"])),
-        chat_history_formatted=lambda x: format_chat_history(x.get("chat_history", []))
+    rag_chain = (
+        RunnablePassthrough.assign(
+            context=lambda x: format_docs_with_metadata(context),
+            chat_history_formatted=lambda x: chat_history_formatted
+        )
+        | analyst_prompt
+        | ANSWER_LLM
     )
-    | analyst_prompt
-    | ANSWER_LLM
-)
+    
+    answer = rag_chain.invoke({"question": question})
+    return {"answer": answer}
+
+# Define the graph
+workflow = StateGraph(GraphState)
+
+# Add the nodes
+workflow.add_node("retrieve_context", retrieve_context)
+workflow.add_node("format_chat_history", format_chat_history)
+workflow.add_node("generate_answer", generate_answer)
+
+# Set the entrypoint
+workflow.set_entry_point("retrieve_context")
+
+# Add the edges
+workflow.add_edge("retrieve_context", "format_chat_history")
+workflow.add_edge("format_chat_history", "generate_answer")
+workflow.add_edge("generate_answer", END)
+
+# Compile the graph
+graph_rag_chain = workflow.compile()

@@ -57,8 +57,18 @@ graph = Neo4jGraph(
 # print(f"\nschema: {graph.schema}\n")
 
 # define state for application
-class State(TypedDict):
+class GraphState(TypedDict):
+    """
+    Represents the state of our graph.
+
+    Attributes:
+        question: question
+        chat_history: chat history
+        context: list of documents
+        answer: answer
+    """
     question: str
+    chat_history: List[Dict[str, str]]
     context: List[Document]
     answer: str
 
