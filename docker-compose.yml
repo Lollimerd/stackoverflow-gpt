@@ -52,6 +52,8 @@ services:
       - NEO4J_server_memory_pagecache_size=2G # For large graphs, dedicate memory to page cache
       # --- Enable Java Vector API (SIMD) ---
       - NEO4J_server_jvm_additional=--add-modules=jdk.incubator.vector
+      # Disable sending diagnostic data/telemetry
+      # - NEO4J_dbms_telemetry_enabled=false
     restart: unless-stopped
     networks:
       - app-network
@@ -138,39 +140,39 @@ services:
     # environment:
     #   - QDRANT__SERVICE__API_KEY=your_super_secret_api_key
 
-  db:
-    image: postgres:17.2
-    container_name: db # database host
-    restart: always
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 3s
-      timeout: 3s
-      retries: 10
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=postgres
-    ports:
-      - 5432:5432
-    volumes:
-      - database_data:/var/lib/postgresql/data
-    networks:
-      - app-network
+  # db:
+  #   image: postgres:17.2
+  #   container_name: db # database host
+  #   restart: always
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 3s
+  #     timeout: 3s
+  #     retries: 10
+  #   environment:
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=postgres
+  #     - POSTGRES_DB=postgres
+  #   ports:
+  #     - 5432:5432
+  #   volumes:
+  #     - database_data:/var/lib/postgresql/data
+  #   networks:
+  #     - app-network
 
-  langfuse-server:
-    image: langfuse/langfuse:2
-    container_name: langfuse-server
-    restart: always
-    depends_on:
-      db:
-        condition: service_healthy
-    ports:
-      - "4000:4000"
-    env_file:
-      - langfuse.env
-    networks:
-      - app-network
+  # langfuse-server:
+  #   image: langfuse/langfuse:2
+  #   container_name: langfuse-server
+  #   restart: always
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   ports:
+  #     - "4000:4000"
+  #   env_file:
+  #     - langfuse.env
+  #   networks:
+  #     - app-network
 
   backend-server:
     build:
@@ -186,7 +188,7 @@ services:
       - STACKEXCHANGE_API_KEY=${STACKEXCHANGE_API_KEY}
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
       - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
-      - LANGFUSE_HOST=${LANGFUSE_HOST}
+      - LANGFUSE_BASE_URL=http://langfuse-server:4000
     restart: unless-stopped
     networks:
       - app-network
