@@ -51,10 +51,7 @@ def load_so_data(tag: str, page: int) -> dict:
         api_key = os.getenv("STACKEXCHANGE_API_KEY") 
         key_param = f"&key={api_key}" if api_key else ""
         site = "stackoverflow"
-        parameters = (
-            f"""?pagesize=100&page={page}&order=desc&sort=creation&answers=1&tagged={tag}&
-            site={site}&filter=!*236eb_eL9rai)MOSNZ-6D3Q6ZKb0buI*IVotWaTb{key_param}"""
-        )
+        parameters = (f"""?pagesize=100&page={page}&order=desc&sort=creation&answers=1&tagged={tag}&site={site}&filter=!*236eb_eL9rai)MOSNZ-6D3Q6ZKb0buI*IVotWaTb{key_param}""")
         
         # Wrap the network request in its own try-except block
         response = requests.get(so_api_base_url + parameters)
@@ -80,10 +77,7 @@ def load_so_data(tag: str, page: int) -> dict:
     
 def load_high_score_so_data() -> None:
     """load stackoverflow data with a high score"""
-    parameters = (
-        f"""?fromdate=1664150400&order=desc&sort=votes&site=stackoverflow&
-        filter=!.DK56VBPooplF.)bWW5iOX32Fh1lcCkw1b_Y6Zkb7YD8.ZMhrR5.FRRsR6Z1uK8*Z5wPaONvyII"""
-    )
+    parameters = (f"""?fromdate=1664150400&order=desc&sort=votes&site=stackoverflow&filter=!.DK56VBPooplF.)bWW5iOX32Fh1lcCkw1b_Y6Zkb7YD8.ZMhrR5.FRRsR6Z1uK8*Z5wPaONvyII""")
     data = requests.get(so_api_base_url + parameters).json()
     if "items" in data and data["items"]:
         if "error_name" in data:
