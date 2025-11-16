@@ -215,7 +215,7 @@ services:
       backend-server:
         condition: service_started
       graphDB:
-        condition: service_healthy
+        condition: service_started
 
 networks:
   app-network:
