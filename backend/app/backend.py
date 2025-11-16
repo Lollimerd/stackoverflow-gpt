@@ -1,5 +1,5 @@
 # main.py
-import asyncio, os, json, uvicorn, docker
+import asyncio, os, json, uvicorn
 from datetime import datetime
 from typing import AsyncGenerator, List, Dict
 from fastapi import FastAPI
@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from urllib.parse import urlparse
 from dotenv import load_dotenv
-from utils.util import format_docs_with_metadata, find_container_by_port
+from utils.util import find_container_by_port
 from setup.init import ANSWER_LLM, NEO4J_URL, NEO4J_USERNAME
 from tools.custom_tool import graph_rag_chain
 
@@ -57,7 +57,10 @@ async def stream_ask_question(request: QueryRequest) -> StreamingResponse:
 
         # Pass chat history to the chain
         async for chunk in graph_rag_chain.astream(
-            {"question": request.question, "chat_history": request.chat_history},
+            {
+                "question": request.question, 
+                "chat_history": request.chat_history
+            },
         ):
             # Extract content and reasoning
             content_chunk = chunk.content
