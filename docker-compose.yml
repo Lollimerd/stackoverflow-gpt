@@ -186,15 +186,12 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
       - EMBEDDING_MODEL=${EMBEDDING_MODEL}
       - STACKEXCHANGE_API_KEY=${STACKEXCHANGE_API_KEY}
-      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
-      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
-      - LANGFUSE_BASE_URL=http://langfuse-server:4000
     restart: unless-stopped
     networks:
       - app-network
     depends_on:
       graphDB:
-        condition: service_healthy
+        condition: service_started
       ollama:
         condition: service_started
   
