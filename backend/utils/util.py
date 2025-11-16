@@ -1,6 +1,6 @@
 from langchain_core.documents import Document
 from typing import List, Any
-import json, docker, re, os
+import json, docker, re, os, socket
 
 def escape_lucene_chars(text: str) -> str:
     """
@@ -16,12 +16,7 @@ def find_container_by_port(port: int) -> str:
     """Inspects running Docker containers to find which one is using the specified port."""
     if not port:
         return "Invalid port"
-
-    # Check if running in Docker
-    if os.path.exists('/.dockerenv'):
-        return f"Connected (port {port})"
     
-    # for non-containerized environments
     try:
         # Connect to the Docker daemon
         client = docker.from_env()
@@ -35,9 +30,12 @@ def find_container_by_port(port: int) -> str:
                     for mapping in host_mappings:
                         if mapping.get("HostPort") == str(port):
                             return container.name # Found it!
-
         return "No matching container found"
+    
     except docker.errors.DockerException:
+        if os.path.exists('/.dockerenv'):
+            hostname = socket.gethostname()
+            return f"Self ({hostname}) - Docker socket not mounted?"
         return "Docker daemon not running or not accessible"
     except Exception as e:
         return f"An error occurred: {e}"
